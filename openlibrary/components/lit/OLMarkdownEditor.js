@@ -110,7 +110,7 @@ export class OLMarkdownEditor extends LitElement {
       font-style: italic;
       font-family: var(--font-family-quote, var(--font-family-body));
     }
-    
+
     .editor-input .tiptap blockquote p {
       margin: 0;
     }
@@ -154,7 +154,7 @@ export class OLMarkdownEditor extends LitElement {
     .toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .link-popover-wrapper { position: relative; display: inline-flex; }
-    
+
     .link-popover {
       position: absolute;
       top: calc(100% + var(--spacing-xs));
@@ -178,9 +178,9 @@ export class OLMarkdownEditor extends LitElement {
       transition: border-color 0.2s;
       font-family: var(--font-family-body);
     }
-    
-    .link-input:focus { 
-      border: var(--border-input-focused); 
+
+    .link-input:focus {
+      border: var(--border-input-focused);
       box-shadow: var(--box-shadow-focus);
     }
 
@@ -233,7 +233,7 @@ export class OLMarkdownEditor extends LitElement {
 
     firstUpdated() {
         if (!this.targetId) {
-            this._errorMsg = "Missing 'target-id' attribute.";
+            this._errorMsg = 'Missing \'target-id\' attribute.';
             console.error('OLMarkdownEditor Error:', this._errorMsg);
             return;
         }
