@@ -13,7 +13,7 @@ import Placeholder from '@tiptap/extension-placeholder';
  * the DOM, which needs to be hidden
  *
  * Example:
- * <textarea id="body-input" style="display: none;">value</textarea>
+ * <textarea id="body-input">value</textarea>
  * <ol-markdown-editor target-id="body-input" placeholder="Type here..."></ol-markdown-editor>
  *
  * @property {String} target-id - The ID of the DOM element to sync the Markdown output with.
@@ -24,7 +24,7 @@ import Placeholder from '@tiptap/extension-placeholder';
  * <form action="/save" method="POST">
  * <div class="formElement">
  * <label for="page--body">Document Body:</label>
- * <textarea id="page--body" name="body" style="display: none;">**Initial** markdown.</textarea>
+ * <textarea id="page--body" name="body">**Initial** markdown.</textarea>
  * <ol-markdown-editor target-id="page--body" placeholder="Write the main content..."></ol-markdown-editor>
  * </div>
  * <button type="submit">Save Document</button>
@@ -54,7 +54,8 @@ export class OLMarkdownEditor extends LitElement {
         placeholder: { type: String },
         editor: { state: true },
         showLinkPopover: { state: true },
-        linkInputValue: { state: true }
+        linkInputValue: { state: true },
+        _errorMsg: { state: true }
     };
 
     static styles = css`
@@ -68,21 +69,21 @@ export class OLMarkdownEditor extends LitElement {
     .toolbar {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
-      padding: 8px;
+      gap: var(--spacing-inline-sm);
+      padding: var(--spacing-inset-sm);
       border-bottom: var(--border-card);
       background: var(--grey-f4f4f4);
       align-items: center;
     }
 
     .toolbar-divider {
-      height: 1.25rem;
-      margin: 0 4px;
+      height: var(--spacing-xl);
+      margin: 0 var(--spacing-inline-sm);
       border-left: var(--border-divider);
     }
 
     .editor-input {
-      padding: 1.5rem;
+      padding: var(--spacing-inset-lg);
       min-height: 250px;
       display: flex;
       flex-direction: column;
@@ -92,6 +93,8 @@ export class OLMarkdownEditor extends LitElement {
     .editor-input .tiptap {
       outline: none;
       flex-grow: 1;
+      font-family: var(--font-family-body);
+      line-height: var(--line-height-body);
     }
 
     .editor-input .tiptap a {
@@ -99,13 +102,15 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     .editor-input .tiptap blockquote {
-      margin-left: 1rem;
-      padding: .5rem 1rem;
-      border-left: 3px solid var(--darker-brand-blue);
-      color: var(--dark-grey, #4b5563);
+      margin-left: var(--spacing-lg);
+      padding: var(--spacing-sm) var(--spacing-lg);
+      border-left: var(--border-width-heavy) solid var(--darker-brand-blue);
+      color: var(--dark-grey);
       background: var(--lightest-grey);
       font-style: italic;
+      font-family: var(--font-family-quote, var(--font-family-body));
     }
+    
     .editor-input .tiptap blockquote p {
       margin: 0;
     }
@@ -120,10 +125,10 @@ export class OLMarkdownEditor extends LitElement {
 
     .toolbar-btn {
       background: transparent;
-      border: none;
-      border-radius: var(--border-radius-lg);
-      width: 2rem;
-      height: 2rem;
+      border: var(--border-width-none, 0);
+      border-radius: var(--border-radius-button);
+      width: var(--spacing-3xl);
+      height: var(--spacing-3xl);
       cursor: pointer;
       color: var(--darker-grey);
       transition: all 0.15s ease;
@@ -132,44 +137,62 @@ export class OLMarkdownEditor extends LitElement {
       justify-content: center;
     }
 
-    .toolbar-btn svg { width: 1.25rem; height: 1.25rem; stroke-width: 2.2; }
+    .toolbar-btn svg { width: var(--spacing-xl); height: var(--spacing-xl); stroke-width: 2.2; }
     .toolbar-btn:hover:not(:disabled) { background: var(--lighter-grey); }
 
     .toolbar-btn.is-active {
       background: var(--light-grey);
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-      color: #111827;
+      box-shadow: inset 0 1px 2px var(--boxshadow-black);
+      color: var(--black);
     }
 
     .toolbar-btn:focus-visible {
-      outline: 2px solid var(--darker-brand-blue);
+      outline: var(--focus-width, 2px) solid var(--color-focus-ring);
       outline-offset: -2px;
     }
 
     .toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .link-popover-wrapper { position: relative; display: inline-flex; }
+    
     .link-popover {
       position: absolute;
-      top: calc(100% + 6px);
+      top: calc(100% + var(--spacing-xs));
       border: var(--border-card);
-      border-radius: var(--border-radius-lg);
-      padding: 8px;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      border-radius: var(--border-radius-overlay);
+      padding: var(--spacing-inset-sm);
+      box-shadow: 0 4px 15px var(--boxshadow-black);
+      background: var(--white);
       display: flex;
-      gap: 6px;
+      gap: var(--spacing-inline-md);
       min-width: 260px;
+      z-index: var(--z-index-level-5, 999);
     }
 
     .link-input {
       flex-grow: 1;
-      border: var(--border-card);
-      border-radius: var(--border-radius-md);
-      padding: 6px 12px;
+      border: var(--border-input);
+      border-radius: var(--border-radius-input);
+      padding: var(--spacing-xs) var(--spacing-md);
       outline: none;
       transition: border-color 0.2s;
+      font-family: var(--font-family-body);
     }
-    .link-input:focus { border-color: var(--darker-brand-blue); }
+    
+    .link-input:focus { 
+      border: var(--border-input-focused); 
+      box-shadow: var(--box-shadow-focus);
+    }
+
+    .error-state {
+      padding: var(--spacing-inset-lg);
+      border: var(--border-width-control, 1px) solid var(--color-border-error);
+      background: var(--baby-pink);
+      color: var(--dark-red);
+      border-radius: var(--border-radius-notification);
+      font-family: var(--font-family-body);
+      margin-bottom: var(--spacing-stack-sm);
+    }
   `;
 
     constructor() {
@@ -178,6 +201,7 @@ export class OLMarkdownEditor extends LitElement {
         this.targetElement = null;
         this.showLinkPopover = false;
         this.linkInputValue = '';
+        this._errorMsg = null;
         this._handleDocumentClick = this._handleDocumentClick.bind(this);
     }
 
@@ -189,6 +213,14 @@ export class OLMarkdownEditor extends LitElement {
     disconnectedCallback() {
         super.disconnectedCallback();
         document.removeEventListener('mousedown', this._handleDocumentClick);
+
+        if (this.targetElement) {
+            this.targetElement.style.display = '';
+            if (this._associatedLabel && this._labelClickHandler) {
+                this._associatedLabel.removeEventListener('click', this._labelClickHandler);
+            }
+        }
+
         if (this.editor) this.editor.destroy();
     }
 
@@ -200,11 +232,21 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     firstUpdated() {
-        if (this.targetId) {
-            this.targetElement = document.getElementById(this.targetId);
+        if (!this.targetId) {
+            this._errorMsg = "Missing 'target-id' attribute.";
+            console.error('OLMarkdownEditor Error:', this._errorMsg);
+            return;
         }
 
-        const initialContent = this.targetElement ? this.targetElement.value : '';
+        this.targetElement = document.getElementById(this.targetId);
+
+        if (!this.targetElement) {
+            this._errorMsg = `Target element with ID "${this.targetId}" not found in the DOM.`;
+            console.error('OLMarkdownEditor Error:', this._errorMsg);
+            return;
+        }
+
+        const initialContent = this.targetElement.value || '';
         const editorRoot = this.shadowRoot.getElementById('editor-root');
 
         this.editor = new Editor({
@@ -223,7 +265,11 @@ export class OLMarkdownEditor extends LitElement {
             ],
             content: initialContent,
             onUpdate: ({ editor }) => {
-                const markdownOutput = editor.storage.markdown.getMarkdown();
+                let markdownOutput = editor.storage.markdown.getMarkdown();
+
+                // Note, tiptap uses 2 spaces for list indentation, olmarkdown uses 4
+                // This line is a 'hacky' fix to allow compatibility between the both
+                markdownOutput = markdownOutput.replace(/^(\s*)([*+\-]|\d+\.) /gm, '\n$1$1$2 ');
 
                 if (this.targetElement) {
                     this.targetElement.value = markdownOutput;
@@ -237,21 +283,35 @@ export class OLMarkdownEditor extends LitElement {
             },
             onTransaction: () => this.requestUpdate()
         });
+
+        this.targetElement.style.display = 'none';
+
+        const associatedLabel = document.querySelector(`label[for="${this.targetId}"]`);
+        if (associatedLabel) {
+            this._associatedLabel = associatedLabel;
+            this._labelClickHandler = (e) => {
+                e.preventDefault();
+                this._focusEditor();
+            };
+            associatedLabel.addEventListener('click', this._labelClickHandler);
+        }
     }
 
     _handleToolbarMouseDown(e) { e.preventDefault(); }
 
     _focusEditor() {
-        if (this.editor && !this.editor.isFocused) this.editor.commands.focus();
+        if (!this.editor) return;
+        if (!this.editor.isFocused) this.editor.commands.focus();
     }
 
-    formatHeading(level) { this.editor.chain().focus().toggleHeading({ level }).run(); }
-    formatText(type) { this.editor.chain().focus()[`toggle${type.charAt(0).toUpperCase() + type.slice(1)}`]().run(); }
-    insertRule() { this.editor.chain().focus().setHorizontalRule().run(); }
-    formatQuote() { this.editor.chain().focus().toggleBlockquote().run(); }
-    formatList(type) { this.editor.chain().focus()[type === 'bullet' ? 'toggleBulletList' : 'toggleOrderedList']().run(); }
+    formatHeading(level) { if (!this.editor) return; this.editor.chain().focus().toggleHeading({ level }).run(); }
+    formatText(type) { if (!this.editor) return; this.editor.chain().focus()[`toggle${type.charAt(0).toUpperCase() + type.slice(1)}`]().run(); }
+    insertRule() { if (!this.editor) return; this.editor.chain().focus().setHorizontalRule().run(); }
+    formatQuote() { if (!this.editor) return; this.editor.chain().focus().toggleBlockquote().run(); }
+    formatList(type) { if (!this.editor) return; this.editor.chain().focus()[type === 'bullet' ? 'toggleBulletList' : 'toggleOrderedList']().run(); }
 
     toggleLinkPopover() {
+        if (!this.editor) return;
         this.showLinkPopover = !this.showLinkPopover;
         if (this.showLinkPopover) {
             this.linkInputValue = this.editor.getAttributes('link').href || '';
@@ -267,12 +327,14 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     applyLink() {
+        if (!this.editor) return;
         const chain = this.editor.chain().focus().extendMarkRange('link');
         this.linkInputValue === '' ? chain.unsetLink().run() : chain.setLink({ href: this.linkInputValue }).run();
         this.showLinkPopover = false;
     }
 
     removeLink() {
+        if (!this.editor) return;
         this.editor.chain().focus().extendMarkRange('link').unsetLink().run();
         this.showLinkPopover = false;
     }
@@ -282,6 +344,8 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     _renderButton({ title, icon, action, isActive = false, isDisabled = false, customColor = null }) {
+        const isBtnDisabled = !this.editor || isDisabled;
+
         return html`
       <button
         type="button"
@@ -291,7 +355,7 @@ export class OLMarkdownEditor extends LitElement {
         class="toolbar-btn ${isActive ? 'is-active' : ''}"
         style="${customColor ? `color: ${customColor};` : ''}"
         @click="${action}"
-        ?disabled="${isDisabled}"
+        ?disabled="${isBtnDisabled}"
       >
         ${icon}
       </button>
@@ -299,6 +363,15 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     render() {
+        if (this._errorMsg) {
+            return html`
+                <div class="error-state">
+                    <strong>Editor Initialization Failed:</strong> ${this._errorMsg}<br>
+                    <small>The standard text input has been kept active as a fallback.</small>
+                </div>
+            `;
+        }
+
         return html`
       <div class="editor-wrapper">
         <div class="toolbar" @mousedown="${this._handleToolbarMouseDown}">
@@ -318,7 +391,7 @@ export class OLMarkdownEditor extends LitElement {
               <div class="link-popover" @mousedown="${(e) => e.stopPropagation()}">
                 <input type="url" class="link-input" placeholder="https://..." .value="${this.linkInputValue}" @input="${this.handleLinkInput}" @keydown="${this.handleLinkKeydown}" />
                 ${this._renderButton({ title: 'Save Link', icon: ICONS.save, action: this.applyLink.bind(this) })}
-                ${this._isActive('link') ? this._renderButton({ title: 'Remove Link', icon: ICONS.remove, action: this.removeLink.bind(this), customColor: '#ef4444' }) : ''}
+                ${this._isActive('link') ? this._renderButton({ title: 'Remove Link', icon: ICONS.remove, action: this.removeLink.bind(this), customColor: 'var(--red)' }) : ''}
               </div>
             ` : ''}
           </div>

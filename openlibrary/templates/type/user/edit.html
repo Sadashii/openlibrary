@@ -34,7 +34,7 @@ $var title: $_('Editing %(name)s', name=page.displayname)
         <div class="formElement">
             <div class="label"><label for="user-description">$_("Description")</label></div>
             <div class="input">
-                <textarea name="description" id="user-description" style="display: none;">$page.description</textarea>
+                <textarea name="description" id="user-description">$page.description</textarea>
                 <ol-markdown-editor target-id="user-description"></ol-markdown-editor>
             </div>
         </div>
