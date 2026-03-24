@@ -47,8 +47,8 @@ $:macros.HiddenSaveButton("addAuthor")
                                 <span class="tip">$_('If you "borrow" information from somewhere, please make sure to cite the source.')</span>
                             </div>
                             <div class="input">
-                                <textarea name="author--bio"
-                                    class="markdown olform__input--large" id="author--bio" rows="6">$page.bio</textarea>
+                                <textarea name="author--bio" style="display: none;" id="author--bio" rows="6">$page.bio</textarea>
+                                <ol-markdown-editor target-id="author--bio"></ol-markdown-editor>
                             </div>
                         </div>
 

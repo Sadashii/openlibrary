@@ -62,6 +62,7 @@ export class OLMarkdownEditor extends LitElement {
     .editor-wrapper { 
       border: var(--border-card);
       border-radius: var(--border-radius-lg); 
+      background: var(--white);
     }
     
     .toolbar { 
