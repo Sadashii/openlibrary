@@ -27,7 +27,7 @@
   margin-left: 1rem;
   padding: 0.5rem 1rem;
   border-left: 3px solid var(--darker-brand-blue);
-  color: var(--dark-grey, #4b5563);
+  color: var(--dark-grey);
   background: var(--lightest-grey);
   font-style: italic;
 }

@@ -88,6 +88,28 @@ div.editionAbout p.featured-count {
   border: 0;
 }
 
+.edition-notes,
+.book-description {
+  font-size: var(--font-size-label-medium);
+  margin-top: 5px;
+  margin-bottom: 20px;
+}
+
+.edition-notes ul,
+.book-description ul,
+.edition-notes ol,
+.book-description ol {
+  padding-left: 2rem;
+}
+
+.edition-notes ul li,
+.book-description ul li,
+.edition-notes ol li,
+.book-description ol li {
+  list-style-type: initial;
+  font-size: 0.8rem;
+}
+
 .checkboxes label {
   display: inline-block;
   padding-right: 10px;

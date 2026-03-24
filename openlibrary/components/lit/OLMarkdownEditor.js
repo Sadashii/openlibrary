@@ -110,7 +110,7 @@ export class OLMarkdownEditor extends LitElement {
       font-style: italic;
       font-family: var(--font-family-quote, var(--font-family-body));
     }
-    
+
     .editor-input .tiptap blockquote p {
       margin: 0;
     }
@@ -154,7 +154,7 @@ export class OLMarkdownEditor extends LitElement {
     .toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .link-popover-wrapper { position: relative; display: inline-flex; }
-    
+
     .link-popover {
       position: absolute;
       top: calc(100% + var(--spacing-xs));
@@ -178,9 +178,9 @@ export class OLMarkdownEditor extends LitElement {
       transition: border-color 0.2s;
       font-family: var(--font-family-body);
     }
-    
-    .link-input:focus { 
-      border: var(--border-input-focused); 
+
+    .link-input:focus {
+      border: var(--border-input-focused);
       box-shadow: var(--box-shadow-focus);
     }
 
@@ -233,17 +233,15 @@ export class OLMarkdownEditor extends LitElement {
 
     firstUpdated() {
         if (!this.targetId) {
-            this._errorMsg = "Missing 'target-id' attribute.";
-            console.error('OLMarkdownEditor Error:', this._errorMsg);
-            return;
+            this._errorMsg = 'Missing \'target-id\' attribute.';
+            throw new Error(`OLMarkdownEditor: ${this._errorMsg}`);
         }
 
         this.targetElement = document.getElementById(this.targetId);
 
         if (!this.targetElement) {
             this._errorMsg = `Target element with ID "${this.targetId}" not found in the DOM.`;
-            console.error('OLMarkdownEditor Error:', this._errorMsg);
-            return;
+            throw new Error(`OLMarkdownEditor: ${this._errorMsg}`);
         }
 
         const initialContent = this.targetElement.value || '';
@@ -267,9 +265,17 @@ export class OLMarkdownEditor extends LitElement {
             onUpdate: ({ editor }) => {
                 let markdownOutput = editor.storage.markdown.getMarkdown();
 
-                // Note, tiptap uses 2 spaces for list indentation, olmarkdown uses 4
-                // This line is a 'hacky' fix to allow compatibility between the both
-                markdownOutput = markdownOutput.replace(/^(\s*)([*+\-]|\d+\.) /gm, '\n$1$1$2 ');
+                // Note, tiptap uses 2 spaces for list indentation, olmarkdown uses 4.
+                // Normalize nested list indentation from 2-space-per-level (tiptap) to
+                // 4-space-per-level (olmarkdown) without injecting extra newlines.
+                markdownOutput = markdownOutput.replace(
+                    /^(\s{2,})([*+-]|\d+\.) /gm,
+                    (match, spaces, marker) => {
+                        const depth = Math.round(spaces.length / 2);
+                        const newIndent = ' '.repeat(depth * 4);
+                        return `${newIndent}${marker} `;
+                    }
+                );
 
                 if (this.targetElement) {
                     this.targetElement.value = markdownOutput;
