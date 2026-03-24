@@ -36,7 +36,6 @@ const ICONS = {
   redo: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>`,
   h1: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17 12l3-2v8"/></svg>`,
   h2: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-2.5 4-4.5 4-6s-2.5-2-4-1"/></svg>`,
-  h3: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.5-1 4-1 4 1.5 0 1.5-1.5 2-1.5 2s1.5.5 1.5 2c0 2.5-2.5 2.5-4 1.5"/></svg>`,
   bold: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 12a4 4 0 0 0 0-8H6v8"/><path d="M15 20a4 4 0 0 0 0-8H6v8Z"/></svg>`,
   italic: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>`,
   underline: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>`,
@@ -63,6 +62,7 @@ export class OLMarkdownEditor extends LitElement {
       border: var(--border-card);
       border-radius: var(--border-radius-lg); 
       background: var(--white);
+      color: var(--grey);
     }
     
     .toolbar { 
@@ -92,6 +92,22 @@ export class OLMarkdownEditor extends LitElement {
     .editor-input .tiptap { 
       outline: none; 
       flex-grow: 1;           
+    }
+
+    .editor-input .tiptap a {
+      color: var(--link-blue);
+    }
+
+    .editor-input .tiptap blockquote {
+      margin-left: 1rem;
+      padding: .5rem 1rem;
+      border-left: 3px solid var(--darker-brand-blue);
+      color: var(--dark-grey, #4b5563);
+      background: var(--lightest-grey);
+      font-style: italic;
+    }
+    .editor-input .tiptap blockquote p {
+      margin: 0;
     }
 
     .tiptap p.is-editor-empty:first-child::before {
@@ -195,7 +211,7 @@ export class OLMarkdownEditor extends LitElement {
       element: editorRoot,
       extensions: [
         StarterKit.configure({
-          heading: { levels: [1, 2, 3] },
+          heading: { levels: [1, 2] },
           codeBlock: false,
           code: false,
           hardBreak: false,
@@ -291,7 +307,6 @@ export class OLMarkdownEditor extends LitElement {
           <div class="toolbar-divider"></div>
           ${this._renderButton({ title: 'Heading 1', icon: ICONS.h1, action: () => this.formatHeading(1), isActive: this._isActive('heading', { level: 1 }) })}
           ${this._renderButton({ title: 'Heading 2', icon: ICONS.h2, action: () => this.formatHeading(2), isActive: this._isActive('heading', { level: 2 }) })}
-          ${this._renderButton({ title: 'Heading 3', icon: ICONS.h3, action: () => this.formatHeading(3), isActive: this._isActive('heading', { level: 3 }) })}
           <div class="toolbar-divider"></div>
           ${this._renderButton({ title: 'Bold', icon: ICONS.bold, action: () => this.formatText('bold'), isActive: this._isActive('bold') })}
           ${this._renderButton({ title: 'Italic', icon: ICONS.italic, action: () => this.formatText('italic'), isActive: this._isActive('italic') })}

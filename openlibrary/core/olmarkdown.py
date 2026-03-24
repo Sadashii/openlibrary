@@ -11,8 +11,6 @@ The custom changes done here to markdown are also reptead in WMD editor,
 the javascript markdown editor used in OL.
 """
 
-# TODO: These changes TBD or implemented in the new editor AS WELL.
-
 import re
 
 from infogami.utils.markdown import markdown
