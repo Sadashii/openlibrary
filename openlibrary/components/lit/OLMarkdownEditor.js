@@ -1,8 +1,4 @@
 import { LitElement, html, css } from 'lit';
-import { Editor } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
-import { Markdown } from 'tiptap-markdown';
-import Placeholder from '@tiptap/extension-placeholder';
 
 /**
  * OLMarkdownEditor - A web component for the tiptap wysiwyg editor
@@ -59,6 +55,11 @@ export class OLMarkdownEditor extends LitElement {
     };
 
     static styles = css`
+    .loading-placeholder {
+        color: var(--light-grey);
+        pointer-events: none;
+      }
+
     .editor-wrapper {
       border: var(--border-card);
       border-radius: var(--border-radius-lg);
@@ -231,7 +232,7 @@ export class OLMarkdownEditor extends LitElement {
         }
     }
 
-    firstUpdated() {
+    async firstUpdated() {
         if (!this.targetId) {
             this._errorMsg = 'Missing \'target-id\' attribute.';
             throw new Error(`OLMarkdownEditor: ${this._errorMsg}`);
@@ -244,24 +245,15 @@ export class OLMarkdownEditor extends LitElement {
             throw new Error(`OLMarkdownEditor: ${this._errorMsg}`);
         }
 
+        const { createEditor } = await import('./editor-core.js');
+
         const initialContent = this.targetElement.value || '';
         const editorRoot = this.shadowRoot.getElementById('editor-root');
 
-        this.editor = new Editor({
+        this.editor = createEditor({
             element: editorRoot,
-            extensions: [
-                StarterKit.configure({
-                    heading: { levels: [1, 2] },
-                    codeBlock: false,
-                    code: false,
-                    hardBreak: false,
-                    link: { openOnClick: false },
-                    strike: false
-                }),
-                Markdown,
-                Placeholder.configure({ placeholder: this.placeholder || 'Write something...' })
-            ],
             content: initialContent,
+            placeholder: this.placeholder || 'Write something...',
             onUpdate: ({ editor }) => {
                 let markdownOutput = editor.storage.markdown.getMarkdown();
 
@@ -287,7 +279,9 @@ export class OLMarkdownEditor extends LitElement {
                     composed: true
                 }));
             },
-            onTransaction: () => this.requestUpdate()
+            onTransaction: () => {
+                this.requestUpdate();
+            }
         });
 
         this.targetElement.style.display = 'none';
@@ -408,7 +402,9 @@ export class OLMarkdownEditor extends LitElement {
           ${this._renderButton({ title: 'Numbered List', icon: ICONS.ol, action: () => this.formatList('number'), isActive: this._isActive('orderedList') })}
         </div>
 
-        <div id="editor-root" class="editor-input" @click="${this._focusEditor}"></div>
+        <div id="editor-root" class="editor-input" @click="${this._focusEditor}">
+            ${!this.editor ? html`<span class="loading-placeholder">${this.placeholder || 'Write something...'}</span>` : ''}
+        </div>
       </div>
     `;
     }
