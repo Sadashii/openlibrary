@@ -9,5 +9,6 @@
 export { OLReadMore } from './OLReadMore.js';
 export { OlPagination } from './OlPagination.js';
 export { OLMarkdownEditor } from './OLMarkdownEditor.js'
+export { OlPopover } from './OlPopover.js';
 export { OLChip } from './OLChip.js';
 export { OLChipGroup } from './OLChipGroup.js';
