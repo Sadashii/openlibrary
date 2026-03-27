@@ -18,24 +18,24 @@ import Placeholder from '@tiptap/extension-placeholder';
  * @returns {Editor}
  */
 export function createEditor({ element, content, placeholder, onUpdate, onTransaction }) {
-  return new Editor({
-    element,
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2] },
-        codeBlock: false,
-        code: false,
-        link: { openOnClick: false, autolink: true },
-        strike: false
-      }),
-      Markdown.configure({
-        breaks: true,
-        linkify: true
-      }),
-      Placeholder.configure({ placeholder })
-    ],
-    content,
-    onUpdate,
-    onTransaction
-  });
+    return new Editor({
+        element,
+        extensions: [
+            StarterKit.configure({
+                heading: { levels: [1, 2] },
+                codeBlock: false,
+                code: false,
+                link: { openOnClick: false, autolink: true },
+                strike: false
+            }),
+            Markdown.configure({
+                breaks: true,
+                linkify: true
+            }),
+            Placeholder.configure({ placeholder })
+        ],
+        content,
+        onUpdate,
+        onTransaction
+    });
 }
