@@ -1,29 +1,28 @@
 import { LitElement, html, css } from 'lit';
 
 /**
- * OLMarkdownEditor - A web component for the tiptap wysiwyg editor
+ * A WYSIWYG markdown editor built on Tiptap.
  *
- * Implemented with Tiptap, this component is the new WYSIWYG editor that works with markdown format.
+ * Syncs its output to a hidden target element (textarea or input) identified by `target-id`.
+ * The target element must exist in the DOM before the editor connects.
  *
- * Important: Ensure that the `target-id` provided matches an existing input element in
- * the DOM, which needs to be hidden
+ * @element ol-markdown-editor
  *
- * Example:
+ * @prop {String} targetId - The ID of the DOM element to sync the Markdown output with.
+ * @prop {String} placeholder - Text to display when the editor is empty (default: 'Write something...').
+ *
+ * @fires ol-markdown-editor-change - Dispatched whenever the editor content changes. `e.detail.value` contains the raw markdown string.
+ *
+ * @example
  * <textarea id="body-input">value</textarea>
  * <ol-markdown-editor target-id="body-input" placeholder="Type here..."></ol-markdown-editor>
  *
- * @property {String} target-id - The ID of the DOM element to sync the Markdown output with.
- * @property {String} placeholder - Text to display when the editor is empty (default: 'Write something...').
- * * @fires markdown-change - Dispatched whenever the editor content changes. `e.detail.value` contains the raw markdown string.
- *
  * @example
  * <form action="/save" method="POST">
- * <div class="formElement">
- * <label for="page--body">Document Body:</label>
- * <textarea id="page--body" name="body">**Initial** markdown.</textarea>
- * <ol-markdown-editor target-id="page--body" placeholder="Write the main content..."></ol-markdown-editor>
- * </div>
- * <button type="submit">Save Document</button>
+ *   <label for="page--body">Document Body:</label>
+ *   <textarea id="page--body" name="body">**Initial** markdown.</textarea>
+ *   <ol-markdown-editor target-id="page--body" placeholder="Write the main content..."></ol-markdown-editor>
+ *   <button type="submit">Save Document</button>
  * </form>
  */
 
@@ -34,14 +33,14 @@ const ICONS = {
     h2: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-2.5 4-4.5 4-6s-2.5-2-4-1"/></svg>`,
     bold: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 12a4 4 0 0 0 0-8H6v8"/><path d="M15 20a4 4 0 0 0 0-8H6v8Z"/></svg>`,
     italic: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>`,
-    underline: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>`,
     link: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
     save: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
     remove: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
     quote: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>`,
     hr: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
     ul: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
-    ol: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>`
+    ol: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>`,
+    more: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`
 };
 
 export class OLMarkdownEditor extends LitElement {
@@ -51,30 +50,37 @@ export class OLMarkdownEditor extends LitElement {
         editor: { state: true },
         showLinkPopover: { state: true },
         linkInputValue: { state: true },
-        _errorMsg: { state: true }
+        _errorMsg: { state: true },
+        showOverflowMenu: { state: true }
     };
 
     static styles = css`
     .loading-placeholder {
-        color: var(--light-grey);
-        pointer-events: none;
-      }
+      color: var(--light-grey);
+      pointer-events: none;
+    }
 
     .editor-wrapper {
-      border: var(--border-card);
-      border-radius: var(--border-radius-lg);
+      border: var(--border-input);
+      border-radius: var(--border-radius-card);
       background: var(--white);
-      color: var(--grey);
+      color: var(--dark-grey);
+      max-height: 70vh;
+      overflow-y: auto;
     }
 
     .toolbar {
       display: flex;
       flex-wrap: wrap;
       gap: var(--spacing-inline-sm);
-      padding: var(--spacing-inset-sm);
+      padding: var(--spacing-inset-xs);
       border-bottom: var(--border-card);
+      border-radius: var(--border-radius-card) var(--border-radius-card) 0 0;
       background: var(--grey-f4f4f4);
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: var(--z-index-level-5);
     }
 
     .toolbar-divider {
@@ -84,8 +90,8 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     .editor-input {
-      padding: var(--spacing-inset-lg);
-      min-height: 250px;
+      padding: var(--spacing-inset-sm);
+      min-height: 200px;
       display: flex;
       flex-direction: column;
       cursor: text;
@@ -95,7 +101,27 @@ export class OLMarkdownEditor extends LitElement {
       outline: none;
       flex-grow: 1;
       font-family: var(--font-family-body);
+      font-size: var(--font-size-body, 0.875rem);
       line-height: var(--line-height-body);
+    }
+
+    .editor-input .tiptap h1 {
+      font-size: var(--font-size-h1, 1.5rem);
+      margin: 0 0 0.5em;
+    }
+
+    .editor-input .tiptap h2 {
+      font-size: var(--font-size-h2, 1.25rem);
+      margin: 0 0 0.45em;
+    }
+
+    .editor-input .tiptap p {
+      margin: 0 0 0.55em;
+    }
+
+    .editor-input .tiptap ul,
+    .editor-input .tiptap ol {
+      margin: 0 0 0.55em;
     }
 
     .editor-input .tiptap a {
@@ -105,11 +131,11 @@ export class OLMarkdownEditor extends LitElement {
     .editor-input .tiptap blockquote {
       margin-left: var(--spacing-lg);
       padding: var(--spacing-sm) var(--spacing-lg);
-      border-left: var(--border-width-heavy) solid var(--darker-brand-blue);
-      color: var(--dark-grey);
-      background: var(--lightest-grey);
+      border-left: var(--border-width-thick) solid var(--beige-deep);
+      color: var(--darker-grey);
+      background: var(--off-white);
       font-style: italic;
-      font-family: var(--font-family-quote, var(--font-family-body));
+      font-family: var(--font-family-body);
     }
 
     .editor-input .tiptap blockquote p {
@@ -126,29 +152,32 @@ export class OLMarkdownEditor extends LitElement {
 
     .toolbar-btn {
       background: transparent;
-      border: var(--border-width-none, 0);
+      border: var(--border-width-none);
       border-radius: var(--border-radius-button);
-      width: var(--spacing-3xl);
-      height: var(--spacing-3xl);
+      padding: var(--spacing-inset-xs);
       cursor: pointer;
       color: var(--darker-grey);
-      transition: all 0.15s ease;
+      transition: background 0.15s ease, color 0.15s ease;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .toolbar-btn svg { width: var(--spacing-xl); height: var(--spacing-xl); stroke-width: 2.2; }
-    .toolbar-btn:hover:not(:disabled) { background: var(--lighter-grey); }
+
+    @media (hover: hover) and (pointer: fine) {
+      .toolbar-btn:hover:not(:disabled) { background: var(--lighter-grey); }
+    }
+
+    .toolbar-btn:active:not(:disabled) { transform: scale(0.95); }
 
     .toolbar-btn.is-active {
       background: var(--light-grey);
-      box-shadow: inset 0 1px 2px var(--boxshadow-black);
       color: var(--black);
     }
 
     .toolbar-btn:focus-visible {
-      outline: var(--focus-width, 2px) solid var(--color-focus-ring);
+      outline: var(--focus-width) solid var(--color-focus-ring);
       outline-offset: -2px;
     }
 
@@ -161,13 +190,22 @@ export class OLMarkdownEditor extends LitElement {
       top: calc(100% + var(--spacing-xs));
       border: var(--border-card);
       border-radius: var(--border-radius-overlay);
-      padding: var(--spacing-inset-sm);
+      padding: var(--spacing-inset-xs);
       box-shadow: 0 4px 15px var(--boxshadow-black);
       background: var(--white);
       display: flex;
       gap: var(--spacing-inline-md);
       min-width: 260px;
-      z-index: var(--z-index-level-5, 999);
+      z-index: var(--z-index-level-5);
+    }
+
+    @media (max-width: 767px) {
+      .link-popover-wrapper { position: static; }
+      .link-popover {
+        left: var(--spacing-inset-xs);
+        right: var(--spacing-inset-xs);
+        min-width: auto;
+      }
     }
 
     .link-input {
@@ -186,13 +224,39 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     .error-state {
-      padding: var(--spacing-inset-lg);
-      border: var(--border-width-control, 1px) solid var(--color-border-error);
+      padding: var(--spacing-inset-sm);
+      border: var(--border-width-control) solid var(--color-border-error);
       background: var(--baby-pink);
       color: var(--dark-red);
       border-radius: var(--border-radius-notification);
       font-family: var(--font-family-body);
       margin-bottom: var(--spacing-stack-sm);
+    }
+
+    .overflow-secondary {
+      display: contents;
+    }
+
+    .overflow-menu-wrapper { position: relative; display: inline-flex; }
+    .overflow-menu-wrapper.overflow-toggle { display: none; }
+
+    .overflow-menu {
+      position: absolute;
+      top: calc(100% + var(--spacing-xs));
+      right: 0;
+      border: var(--border-card);
+      border-radius: var(--border-radius-overlay);
+      padding: var(--spacing-inset-xs);
+      box-shadow: 0 4px 15px var(--boxshadow-black);
+      background: var(--white);
+      display: flex;
+      gap: var(--spacing-inline-sm);
+      z-index: var(--z-index-level-5);
+    }
+
+    @media (max-width: 767px) {
+      .overflow-secondary { display: none; }
+      .overflow-menu-wrapper.overflow-toggle { display: inline-flex; }
     }
   `;
 
@@ -203,6 +267,7 @@ export class OLMarkdownEditor extends LitElement {
         this.showLinkPopover = false;
         this.linkInputValue = '';
         this._errorMsg = null;
+        this.showOverflowMenu = false;
         this._handleDocumentClick = this._handleDocumentClick.bind(this);
     }
 
@@ -226,9 +291,10 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     _handleDocumentClick(e) {
-        if (!this.showLinkPopover) return;
+        if (!this.showLinkPopover && !this.showOverflowMenu) return;
         if (!e.composedPath().includes(this)) {
             this.showLinkPopover = false;
+            this.showOverflowMenu = false;
         }
     }
 
@@ -273,7 +339,7 @@ export class OLMarkdownEditor extends LitElement {
                     this.targetElement.value = markdownOutput;
                 }
 
-                this.dispatchEvent(new CustomEvent('markdown-change', {
+                this.dispatchEvent(new CustomEvent('ol-markdown-editor-change', {
                     detail: { value: markdownOutput },
                     bubbles: true,
                     composed: true
@@ -297,7 +363,9 @@ export class OLMarkdownEditor extends LitElement {
         }
     }
 
-    _handleToolbarMouseDown(e) { e.preventDefault(); }
+    _handleToolbarMouseDown(e) {
+        if (!e.target.closest('.toolbar-btn')) e.preventDefault();
+    }
 
     _focusEditor() {
         if (!this.editor) return;
@@ -314,6 +382,7 @@ export class OLMarkdownEditor extends LitElement {
         if (!this.editor) return;
         this.showLinkPopover = !this.showLinkPopover;
         if (this.showLinkPopover) {
+            this.showOverflowMenu = false;
             this.linkInputValue = this.editor.getAttributes('link').href || '';
             setTimeout(() => this.shadowRoot.querySelector('.link-input')?.focus(), 0);
         }
@@ -372,19 +441,26 @@ export class OLMarkdownEditor extends LitElement {
             `;
         }
 
+        const secondaryButtons = html`
+          ${this._renderButton({ title: 'Heading 1', icon: ICONS.h1, action: () => this.formatHeading(1), isActive: this._isActive('heading', { level: 1 }) })}
+          ${this._renderButton({ title: 'Heading 2', icon: ICONS.h2, action: () => this.formatHeading(2), isActive: this._isActive('heading', { level: 2 }) })}
+          ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
+          ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
+        `;
+
         return html`
       <div class="editor-wrapper">
         <div class="toolbar" @mousedown="${this._handleToolbarMouseDown}">
           ${this._renderButton({ title: 'Undo', icon: ICONS.undo, action: () => this.editor.chain().focus().undo().run(), isDisabled: !this.editor || !this.editor.can().undo() })}
           ${this._renderButton({ title: 'Redo', icon: ICONS.redo, action: () => this.editor.chain().focus().redo().run(), isDisabled: !this.editor || !this.editor.can().redo() })}
-          <div class="toolbar-divider"></div>
-          ${this._renderButton({ title: 'Heading 1', icon: ICONS.h1, action: () => this.formatHeading(1), isActive: this._isActive('heading', { level: 1 }) })}
-          ${this._renderButton({ title: 'Heading 2', icon: ICONS.h2, action: () => this.formatHeading(2), isActive: this._isActive('heading', { level: 2 }) })}
+          <div class="toolbar-divider overflow-secondary"></div>
+          <span class="overflow-secondary">
+            ${this._renderButton({ title: 'Heading 1', icon: ICONS.h1, action: () => this.formatHeading(1), isActive: this._isActive('heading', { level: 1 }) })}
+            ${this._renderButton({ title: 'Heading 2', icon: ICONS.h2, action: () => this.formatHeading(2), isActive: this._isActive('heading', { level: 2 }) })}
+          </span>
           <div class="toolbar-divider"></div>
           ${this._renderButton({ title: 'Bold', icon: ICONS.bold, action: () => this.formatText('bold'), isActive: this._isActive('bold') })}
           ${this._renderButton({ title: 'Italic', icon: ICONS.italic, action: () => this.formatText('italic'), isActive: this._isActive('italic') })}
-          ${this._renderButton({ title: 'Underline', icon: ICONS.underline, action: () => this.formatText('underline'), isActive: this._isActive('underline') })}
-          <div class="toolbar-divider"></div>
           <div class="link-popover-wrapper">
             ${this._renderButton({ title: 'Link', icon: ICONS.link, action: this.toggleLinkPopover.bind(this), isActive: this._isActive('link') || this.showLinkPopover })}
             ${this.showLinkPopover ? html`
@@ -395,11 +471,22 @@ export class OLMarkdownEditor extends LitElement {
               </div>
             ` : ''}
           </div>
-          ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
-          ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
           <div class="toolbar-divider"></div>
           ${this._renderButton({ title: 'Bullet List', icon: ICONS.ul, action: () => this.formatList('bullet'), isActive: this._isActive('bulletList') })}
           ${this._renderButton({ title: 'Numbered List', icon: ICONS.ol, action: () => this.formatList('number'), isActive: this._isActive('orderedList') })}
+          <div class="toolbar-divider"></div>
+          <span class="overflow-secondary">
+            ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
+            ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
+          </span>
+          <div class="overflow-menu-wrapper overflow-toggle">
+            ${this._renderButton({ title: 'More', icon: ICONS.more, action: () => { this.showOverflowMenu = !this.showOverflowMenu; if (this.showOverflowMenu) this.showLinkPopover = false; }, isActive: this.showOverflowMenu })}
+            ${this.showOverflowMenu ? html`
+              <div class="overflow-menu" @mousedown="${(e) => e.stopPropagation()}">
+                ${secondaryButtons}
+              </div>
+            ` : ''}
+          </div>
         </div>
 
         <div id="editor-root" class="editor-input" @click="${this._focusEditor}">
