@@ -4778,7 +4778,7 @@ msgstr ""
 msgid "Who is the publisher?"
 msgstr ""
 
-#: books/add.html
+#: books/add.html books/edit/edition.html
 msgid "For example:"
 msgstr ""
 
@@ -5401,10 +5401,6 @@ msgstr ""
 
 #: books/edit/edition.html
 msgid "Anything about the book that may be of interest."
-msgstr ""
-
-#: books/edit/edition.html
-msgid "For example: <i>A Plume Book</i>"
 msgstr ""
 
 #: books/edit/edition.html
