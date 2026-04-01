@@ -5455,6 +5455,10 @@ msgid "Anything about the book that may be of interest."
 msgstr ""
 
 #: books/edit/edition.html
+msgid "A Plume Book"
+msgstr ""
+
+#: books/edit/edition.html
 msgid "Is it known by any other titles?"
 msgstr ""
 
