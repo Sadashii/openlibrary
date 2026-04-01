@@ -1817,6 +1817,10 @@ msgid "Chip"
 msgstr ""
 
 #: design.html
+msgid "Markdown Editor"
+msgstr ""
+
+#: design.html
 msgid ""
 "The ol-pagination component provides support for both event-based and "
 "URL-based navigation."
@@ -2045,6 +2049,43 @@ msgstr ""
 
 #: design.html
 msgid "Toggle me too"
+msgstr ""
+
+#: design.html
+msgid ""
+"The ol-markdown-editor component is a WYSIWYG editor built on Tiptap that"
+" outputs Markdown. It syncs its content to a hidden target textarea."
+msgstr ""
+
+#: design.html
+msgid "Basic usage"
+msgstr ""
+
+#: design.html
+#, python-format
+msgid ""
+"Provide a %(target_id)s pointing to an existing textarea. The editor "
+"reads initial content from the textarea and syncs changes back to it."
+msgstr ""
+
+#: design.html
+msgid "Custom placeholder"
+msgstr ""
+
+#: design.html
+#, python-format
+msgid "Use %(placeholder)s to set the text shown when the editor is empty."
+msgstr ""
+
+#: design.html
+msgid "Change event"
+msgstr ""
+
+#: design.html
+#, python-format
+msgid ""
+"The editor fires an %(event)s event on every change. The raw Markdown "
+"string is available in %(detail)s."
 msgstr ""
 
 #: diff.html
