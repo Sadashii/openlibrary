@@ -10,6 +10,7 @@ import { LitElement, html, css } from 'lit';
  *
  * @prop {String} targetId - The ID of the DOM element to sync the Markdown output with.
  * @prop {String} placeholder - Text to display when the editor is empty (default: 'Write something...').
+ * @prop {String} height - Minimum height of the editor area, e.g. '100px' (default: '200px'). The editor grows beyond this as content is added.
  *
  * @fires ol-markdown-editor-change - Dispatched whenever the editor content changes. `e.detail.value` contains the raw markdown string.
  *
@@ -47,6 +48,7 @@ export class OLMarkdownEditor extends LitElement {
     static properties = {
         targetId: { type: String, attribute: 'target-id' },
         placeholder: { type: String },
+        height: { type: String },
         editor: { state: true },
         showLinkPopover: { state: true },
         linkInputValue: { state: true },
@@ -489,7 +491,7 @@ export class OLMarkdownEditor extends LitElement {
           </div>
         </div>
 
-        <div id="editor-root" class="editor-input" @click="${this._focusEditor}">
+        <div id="editor-root" class="editor-input" style="${this.height ? `min-height:${this.height}` : ''}" @click="${this._focusEditor}">
             ${!this.editor ? html`<span class="loading-placeholder">${this.placeholder || 'Write something...'}</span>` : ''}
         </div>
       </div>
