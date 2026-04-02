@@ -219,7 +219,7 @@ class SearchFacetsPartial(PartialDataHandler):
 
     def generate(self) -> dict:
         raise NotImplementedError("Use generate_async instead")
-    
+
     async def generate_async(self) -> dict:
         path = self.data.get('path')
         query = self.data.get('query', '')

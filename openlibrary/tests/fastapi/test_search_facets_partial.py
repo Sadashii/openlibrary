@@ -38,6 +38,8 @@ def mock_get_current_user():
 class MockTemplateResult(str):
     """Mocks a web.py Templetor object, which acts as a string but has a .title attribute."""
 
+    __slots__ = ()
+
     @property
     def title(self):
         return "mocked - search"
