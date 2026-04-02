@@ -48,7 +48,7 @@ async def search_facets_partial(
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON in data parameter")
 
-    return await SearchFacetsPartial(data=parsed_data, sfw=sfw == "yes").generate()
+    return await SearchFacetsPartial(data=parsed_data, sfw=sfw == "yes").generate_async()
 
 
 @router.get("/partials/AffiliateLinks.json", include_in_schema=SHOW_PARTIALS_IN_SCHEMA)

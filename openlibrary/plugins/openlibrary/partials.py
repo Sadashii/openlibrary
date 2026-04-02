@@ -217,7 +217,10 @@ class SearchFacetsPartial(PartialDataHandler):
             user.is_librarian() or user.is_super_librarian() or user.is_admin()
         )
 
-    async def generate(self) -> dict:
+    def generate(self) -> dict:
+        raise NotImplementedError("Use generate_async instead")
+    
+    async def generate_async(self) -> dict:
         path = self.data.get('path')
         query = self.data.get('query', '')
         parsed_qs = parse_qs(query.replace('?', ''))
