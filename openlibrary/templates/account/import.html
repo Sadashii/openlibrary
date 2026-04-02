@@ -145,80 +145,86 @@ $def with (books=None, books_wo_isbns=None)
   $else:
     <div class="my-imports">
 
-      <div class="import-buttons">
-        <div id="myProgress" class="hidden">
-          <div id="myBar">$_("Importing...")</div>
-        </div>
+      $if books:
+        <form method="POST"
+              action="/account/import/process/goodreads"
+              id="import-form">
 
-        <div class="import-header-controls">
-          <input type="submit"
-                 class="import-submit cta-btn cta-btn--available"
-                 value="Import $len(books or {}) Books">
+          <div class="import-buttons">
+            <div class="import-header-controls">
+              <button type="submit"
+                      class="import-submit cta-btn cta-btn--available"
+                      data-ol-link-track="PatronImports|Goodreads">
+                $_("Import Books")
+              </button>
 
-          <button class="hidden cta-btn cta-btn--unavailable cta-btn--small cancel-button"
-                  onclick="window.location.reload();">
-            $_("Cancel")
-          </button>
-        </div>
-      </div>
+              <button type="button"
+                      class="hidden cta-btn cta-btn--unavailable cta-btn--small cancel-button"
+                      onclick="window.location.reload();">
+                $_("Cancel")
+              </button>
+            </div>
+          </div>
 
-      $ keys = ['ISBN', 'Title', 'My Rating', 'Exclusive Shelf', 'Date Read']
+          $ keys = ['ISBN', 'Title', 'My Rating', 'Shelves', 'Exclusive Shelf', 'Date Read']
 
-      <div class="import-section">
-        <h3>$_("Books Ready to Import")</h3>
+          <div class="import-section">
+            <h3>$_("Books Ready to Import")</h3>
 
-        <div class="table-responsive">
-          <table class="import-table">
-            <thead>
-              <tr>
-                <th scope="col" class="toggle-all">
-                  <input type="checkbox" checked="checked">
-                </th>
-
-                $for key in keys:
-                  <th scope="col">$key</th>
-
-                <th scope="col" class="import-status hidden">
-                  $_("Status")
-                </th>
-
-                <th scope="col" class="status-reason hidden">
-                  $_("Reason")
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              $if books:
-                $for isbn in books:
-                  <tr class="table-row" isbn="$isbn">
-                    <td>
-                      $ dict = {'ISBN':'', 'Title':'', 'My Rating':'', 'Exclusive Shelf':'', 'Date Read':''}
-                      $ k = ['ISBN', 'My Rating', 'Exclusive Shelf', 'Date Read']
-
-                      $for key in k:
-                        $ dict[key] = books[isbn].get(key)
-
-                      <input class="add-book"
-                             value="$(dict)"
-                             type="checkbox"
-                             checked="checked">
-                    </td>
+            <div class="table-responsive">
+              <table class="import-table">
+                <thead>
+                  <tr>
+                    <th class="toggle-all">
+                      <input type="checkbox" checked>
+                    </th>
 
                     $for key in keys:
-                      <td>$books[isbn].get(key)</td>
-                  </tr>
+                      <th>$key</th>
 
-              $else:
-                <tr>
-                  <td colspan="8" class="table-empty-state">
-                    $_("No valid books with ISBNs found.")
-                  </td>
-                </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    <th class="import-status hidden">Status</th>
+                    <th class="status-reason hidden">Reason</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  $for isbn in books:
+                    $ shelves_raw = books[isbn].get('Bookshelves', books[isbn].get('Bookshelves with positions', ''))
+                    $ parsed_shelves = [s.split(" (#")[0].strip() for s in str(shelves_raw).split(",") if s.strip()]
+                    $ joined_shelves = ", ".join(parsed_shelves)
+
+                    <tr class="table-row" data-isbn="$isbn" data-shelves="$joined_shelves">
+                      <td>
+                        <input type="checkbox"
+                               class="add-book"
+                               value="$isbn"
+                               checked>
+                      </td>
+
+                      $for key in keys:
+                        <td>
+                          $if key == 'My Rating':
+                            $('-' if str(books[isbn].get('My Rating', '')) == '0' else books[isbn].get('My Rating', ''))
+                          $elif key == 'Shelves':
+                            $joined_shelves
+                          $else:
+                            $books[isbn].get(key, '')
+                        </td>
+
+                      <td class="import-status hidden"></td>
+                      <td class="status-reason hidden"></td>
+                    </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </form>
+
+      $else:
+        <p class="notice-box">
+          $_("No valid books with ISBNs found to import.")
+        </p>
 
       $if books_wo_isbns:
         <div class="import-section import-section--missing-isbns">
@@ -234,7 +240,7 @@ $def with (books=None, books_wo_isbns=None)
               <thead>
                 <tr>
                   $for key in keys:
-                    <th scope="col">$key</th>
+                    <th>$key</th>
                 </tr>
               </thead>
 
@@ -243,8 +249,13 @@ $def with (books=None, books_wo_isbns=None)
                   <tr>
                     $for key in keys:
                       <td>
-                        $if books_wo_isbns[id].get(key) != '=""':
-                          $books_wo_isbns[id].get(key)
+                        $if key == 'My Rating':
+                          $('-' if str(books_wo_isbns[id].get('My Rating', '')) == '0' else books_wo_isbns[id].get('My Rating', ''))
+                        $elif key == 'Shelves':
+                          $ shelves_raw = books_wo_isbns[id].get('Bookshelves', books_wo_isbns[id].get('Bookshelves with positions', ''))
+                          $(", ".join([s.split(" (#")[0].strip() for s in str(shelves_raw).split(",") if s.strip()]))
+                        $else:
+                          $books_wo_isbns[id].get(key, '-')
                       </td>
                   </tr>
               </tbody>
@@ -253,4 +264,101 @@ $def with (books=None, books_wo_isbns=None)
         </div>
 
     </div>
+
 </div>
+
+<script>
+  function updateImportCount() {
+    const count = document.querySelectorAll('.add-book:checked').length;
+    const btn = document.querySelector('.import-submit');
+    if (btn) {
+      btn.textContent = `Import $${count} Book$${count !== 1 ? 's' : ''}`;
+      btn.disabled = count === 0;
+    }
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target.matches('th.toggle-all input')) {
+      const checked = e.target.checked;
+      document.querySelectorAll('.add-book').forEach(cb => {
+        cb.checked = checked;
+      });
+      updateImportCount();
+    }
+
+    if (e.target.matches('.add-book')) {
+      updateImportCount();
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', updateImportCount);
+
+  document.getElementById('import-form')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const btn = document.querySelector('.import-submit');
+
+    btn.disabled = true;
+    btn.textContent = "Importing, please wait...";
+
+    document.querySelectorAll('.import-status, .status-reason').forEach(el => {
+      el.classList.remove('hidden');
+    });
+
+    const booksToImport = [];
+    document.querySelectorAll('.add-book:checked').forEach(cb => {
+      const row = cb.closest('tr');
+      const isbn = row.dataset.isbn;
+      const shelvesStr = row.dataset.shelves || "";
+      
+      const shelvesArray = shelvesStr.split(',').map(s => s.trim()).filter(Boolean);
+
+      booksToImport.push({
+        isbn: isbn,
+        shelves: shelvesArray
+      });
+    });
+
+    const payload = { books: booksToImport };
+
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      let errors = 0;
+
+      data.results.forEach(result => {
+        const row = document.querySelector(`tr[data-isbn="$${result.isbn}"]`);
+        if (!row) return;
+
+        const statusCell = row.querySelector('.import-status');
+        const reasonCell = row.querySelector('.status-reason');
+
+        if (result.status === 'success') {
+          statusCell.textContent = 'Imported';
+          statusCell.classList.add('success-imported');
+        } else {
+          errors++;
+          statusCell.textContent = 'Error';
+          statusCell.classList.add('error-imported');
+          reasonCell.textContent = result.reason || 'Unknown error';
+        }
+      });
+
+      const succeeded = data.results.length - errors;
+      btn.textContent = `Done - $${succeeded} imported, $${errors} failed`;
+
+    } catch (err) {
+      console.error(err);
+      btn.textContent = "Something went wrong. Try again.";
+      btn.disabled = false;
+    }
+  });
+</script>
