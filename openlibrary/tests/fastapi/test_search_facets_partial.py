@@ -20,7 +20,7 @@ def mock_do_search_async():
             }
         },
     )()
-    
+
     with patch(
         "openlibrary.plugins.openlibrary.partials.do_search_async",
         mock,
@@ -31,28 +31,25 @@ def mock_do_search_async():
 @pytest.fixture
 def mock_get_current_user():
     """Mock the get_current_user call to avoid context variable LookupErrors."""
-    with patch(
-        "openlibrary.plugins.openlibrary.partials.get_current_user", 
-        return_value=None
-    ) as mock:
+    with patch("openlibrary.plugins.openlibrary.partials.get_current_user", return_value=None) as mock:
         yield mock
+
 
 class MockTemplateResult(str):
     """Mocks a web.py Templetor object, which acts as a string but has a .title attribute."""
+
     @property
     def title(self):
         return "mocked - search"
+
 
 @pytest.fixture
 def mock_render_template():
     """Mock the template rendering to avoid loading real HTML files from disk."""
     mock_html = MockTemplateResult("<div id='mocked-template'></div>")
-    
-    with patch(
-        "openlibrary.plugins.openlibrary.partials.render_template",
-        return_value=mock_html
-    ) as mock:
-        yield mock   
+
+    with patch("openlibrary.plugins.openlibrary.partials.render_template", return_value=mock_html) as mock:
+        yield mock
 
 
 class TestSearchFacetsPartial:
@@ -69,7 +66,7 @@ class TestSearchFacetsPartial:
 
         response = fastapi_client.get(
             "/partials/SearchFacets.json",
-            params={"data": json.dumps(payload)}, 
+            params={"data": json.dumps(payload)},
         )
 
         assert response.status_code == 200
@@ -103,7 +100,7 @@ class TestSearchFacetsPartial:
 
     def test_missing_data_returns_422(self, fastapi_client, mock_do_search_async):
         """Missing the required 'data' query parameter should return 422."""
-        
+
         response = fastapi_client.get("/partials/SearchFacets.json")
 
         assert response.status_code == 422
