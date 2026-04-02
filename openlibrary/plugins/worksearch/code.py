@@ -590,6 +590,7 @@ async def do_search_async(
         solr_internals_params=solr_internals_params,
     )
 
+
 do_search = async_bridge.wrap(do_search_async)
 
 
