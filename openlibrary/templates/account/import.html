@@ -166,7 +166,7 @@ $def with (books=None, books_wo_isbns=None)
             </div>
           </div>
 
-          $ keys = ['ISBN', 'Title', 'My Rating', 'Shelves', 'Exclusive Shelf', 'Date Read']
+          $ keys = ['ISBN', 'ISBN13', 'Title', 'My Rating', 'Shelves', 'Exclusive Shelf', 'Date Read']
 
           <div class="import-section">
             <h3>$_("Books Ready to Import")</h3>
@@ -189,11 +189,13 @@ $def with (books=None, books_wo_isbns=None)
 
                 <tbody>
                   $for isbn in books:
-                    $ shelves_raw = books[isbn].get('Bookshelves', books[isbn].get('Bookshelves with positions', ''))
-                    $ parsed_shelves = [s.split(" (#")[0].strip() for s in str(shelves_raw).split(",") if s.strip()]
+                    $ shelves_raw = books[isbn].get('Bookshelves', '')
+                    $ parsed_shelves = [s.strip() for s in str(shelves_raw).split(",") if s.strip()]
                     $ joined_shelves = ", ".join(parsed_shelves)
+                    $ clean_isbn = str(books[isbn].get('ISBN', '')).replace('="', '').replace('"', '')
+                    $ clean_isbn13 = str(books[isbn].get('ISBN13', '')).replace('="', '').replace('"', '')
 
-                    <tr class="table-row" data-isbn="$isbn" data-shelves="$joined_shelves">
+                    <tr class="table-row" data-rowid="$isbn" data-isbn="$clean_isbn" data-isbn13="$clean_isbn13" data-shelves="$joined_shelves">
                       <td>
                         <input type="checkbox"
                                class="add-book"
@@ -207,6 +209,8 @@ $def with (books=None, books_wo_isbns=None)
                             $('-' if str(books[isbn].get('My Rating', '')) == '0' else books[isbn].get('My Rating', ''))
                           $elif key == 'Shelves':
                             $joined_shelves
+                          $elif key in ('ISBN', 'ISBN13'):
+                            $(str(books[isbn].get(key, '')).replace('="', '').replace('"', ''))
                           $else:
                             $books[isbn].get(key, '')
                         </td>
@@ -252,8 +256,10 @@ $def with (books=None, books_wo_isbns=None)
                         $if key == 'My Rating':
                           $('-' if str(books_wo_isbns[id].get('My Rating', '')) == '0' else books_wo_isbns[id].get('My Rating', ''))
                         $elif key == 'Shelves':
-                          $ shelves_raw = books_wo_isbns[id].get('Bookshelves', books_wo_isbns[id].get('Bookshelves with positions', ''))
-                          $(", ".join([s.split(" (#")[0].strip() for s in str(shelves_raw).split(",") if s.strip()]))
+                          $ shelves_raw = books_wo_isbns[id].get('Bookshelves', '')
+                          $(", ".join([s.strip() for s in str(shelves_raw).split(",") if s.strip()]))
+                        $elif key in ('ISBN', 'ISBN13'):
+                          $(str(books_wo_isbns[id].get(key, '')).replace('="', '').replace('"', ''))
                         $else:
                           $books_wo_isbns[id].get(key, '-')
                       </td>
@@ -309,13 +315,17 @@ $def with (books=None, books_wo_isbns=None)
     const booksToImport = [];
     document.querySelectorAll('.add-book:checked').forEach(cb => {
       const row = cb.closest('tr');
+      const rowid = row.dataset.rowid;
       const isbn = row.dataset.isbn;
+      const isbn13 = row.dataset.isbn13;
       const shelvesStr = row.dataset.shelves || "";
       
       const shelvesArray = shelvesStr.split(',').map(s => s.trim()).filter(Boolean);
 
       booksToImport.push({
+        row_id: rowid,
         isbn: isbn,
+        isbn13: isbn13,
         shelves: shelvesArray
       });
     });
@@ -335,7 +345,7 @@ $def with (books=None, books_wo_isbns=None)
       let errors = 0;
 
       data.results.forEach(result => {
-        const row = document.querySelector(`tr[data-isbn="$${result.isbn}"]`);
+        const row = document.querySelector(`tr[data-rowid="$${result.row_id}"]`);
         if (!row) return;
 
         const statusCell = row.querySelector('.import-status');

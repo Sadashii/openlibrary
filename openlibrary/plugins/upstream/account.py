@@ -927,33 +927,64 @@ class process_imports(delegate.page):
             list_keys_cache = {}
 
             for book in books:
-                raw_isbn = book.get('isbn')
-                if not raw_isbn:
+                row_id = book.get('row_id')
+                
+                raw_isbn = str(book.get('isbn', '')).replace('="', '').replace('"', '').strip()
+                raw_isbn13 = str(book.get('isbn13', '')).replace('="', '').replace('"', '').strip()
+
+                if not raw_isbn and not raw_isbn13:
+                    results.append({"row_id": row_id, "status": "error", "reason": "No valid ISBN provided"})
                     continue
 
                 try:
-                    isbn = canonical(raw_isbn)
-                    isbn_val, asin = Edition.get_isbn_or_asin(isbn)
-                    
-                    if not Edition.is_valid_identifier(isbn_val, asin):
-                        results.append({"isbn": raw_isbn, "status": "error", "reason": "Invalid ISBN"})
-                        continue
+                    edition = None
 
-                    forms = Edition.get_identifier_forms(isbn_val, asin)
-                    edition = next((isbn_cache[f] for f in forms if f in isbn_cache), None)
+                    if raw_isbn13:
+                        try:
+                            isbn13_canon = canonical(raw_isbn13)
+                            isbn_val, asin = Edition.get_isbn_or_asin(isbn13_canon)
+                            
+                            if Edition.is_valid_identifier(isbn_val, asin):
+                                forms = Edition.get_identifier_forms(isbn_val, asin)
+                                edition = next((isbn_cache[f] for f in forms if f in isbn_cache), None)
+                                
+                                if not edition:
+                                    edition = Edition.from_isbn(isbn13_canon)
+                                    if edition:
+                                        for f in forms:
+                                            isbn_cache[f] = edition
+                        except Exception as e:
+                            logger.error(f"Error resolving ISBN13 {raw_isbn13}: {e}")
 
-                    if not edition:
-                        edition = Edition.from_isbn(isbn)
-                        for f in forms:
-                            isbn_cache[f] = edition
+                    if not edition and raw_isbn:
+                        try:
+                            isbn_canon = canonical(raw_isbn)
+                            isbn_val, asin = Edition.get_isbn_or_asin(isbn_canon)
+                            
+                            if Edition.is_valid_identifier(isbn_val, asin):
+                                forms = Edition.get_identifier_forms(isbn_val, asin)
+                                edition = next((isbn_cache[f] for f in forms if f in isbn_cache), None)
+                                
+                                if not edition:
+                                    edition = Edition.from_isbn(isbn_canon)
+                                    if edition:
+                                        for f in forms:
+                                            isbn_cache[f] = edition
+                        except Exception as e:
+                            logger.error(f"Error resolving ISBN {raw_isbn}: {e}")
 
+                    # 3. Validate successful resolution
                     if not edition or not getattr(edition, 'works', None):
-                        results.append({"isbn": raw_isbn, "status": "error", "reason": "Book not found in Open Library"})
+                        results.append({
+                            "row_id": row_id, 
+                            "status": "error", 
+                            "reason": "Book not found in Open Library"
+                        })
                         continue
 
                     work_key = edition.works[0]['key'] if isinstance(edition.works[0], dict) else getattr(edition.works[0], 'key', None)
                     if not work_key:
-                        results.append({"isbn": raw_isbn, "status": "error", "reason": "Missing Work mapping"})
+                        results.append({"row_id": row_id, "status": "error", "reason": "Missing Work mapping"})
                         continue
 
                     work_id = str(work_key.split('/')[-1][2:-1])
@@ -1004,11 +1035,11 @@ class process_imports(delegate.page):
                             
                             list_keys_cache[norm_shelf].add(work_key) 
 
-                    results.append({"isbn": raw_isbn, "status": "success"})
+                    results.append({"row_id": row_id, "status": "success"})
 
                 except Exception as e:
-                    logger.error(f"Error processing book with ISBN {raw_isbn}: {e}", exc_info=True)
-                    results.append({"isbn": raw_isbn, "status": "error", "reason": "Internal server error"})
+                    logger.error(f"Error processing book with Row ID {row_id}: {e}", exc_info=True)
+                    results.append({"row_id": row_id, "status": "error", "reason": "Internal server error"})
 
             if db_inserts:
                 oldb.multiple_insert(Bookshelves.TABLENAME, db_inserts)
