@@ -38,108 +38,108 @@ class AuthTestResponse(BaseModel):
     cookie_value: str | None = Field(None, description="The raw cookie value (for debugging)")
     cookie_parsed: dict = Field(..., description="Parsed cookie components")
 
+if os.getenv("LOCAL_DEV") is not None:
+    @router.get("/account/test.json", response_model=AuthTestResponse, tags=["internal"])
+    async def check_authentication(
+        request: Request,
+        user: Annotated[AuthenticatedUser | None, Depends(get_authenticated_user)],
+    ) -> AuthTestResponse:
+        """
+        Check endpoint to verify authentication is working correctly.
 
-@router.get("/account/test.json", response_model=AuthTestResponse, tags=["internal"], include_in_schema=SHOW_INTERNAL_IN_SCHEMA)
-async def check_authentication(
-    request: Request,
-    user: Annotated[AuthenticatedUser | None, Depends(get_authenticated_user)],
-) -> AuthTestResponse:
-    """
-    Check endpoint to verify authentication is working correctly.
+        This endpoint reads the session cookie, decodes it, and returns information
+        about the authenticated user. It's useful for testing the authentication
+        middleware without requiring a full login flow.
 
-    This endpoint reads the session cookie, decodes it, and returns information
-    about the authenticated user. It's useful for testing the authentication
-    middleware without requiring a full login flow.
+        Returns:
+            AuthTestResponse: Information about the authentication status
 
-    Returns:
-        AuthTestResponse: Information about the authentication status
+        Example:
+            # With valid session cookie
+            curl http://localhost:18080/account/test.json \\
+                -b "session=/people/openlibrary%2C2026-01-18T17%3A25%3A46%2C7897f%24841a3bd2f8e9a5ca46f505fa557d57bd"
 
-    Example:
-        # With valid session cookie
-        curl http://localhost:18080/account/test.json \\
-            -b "session=/people/openlibrary%2C2026-01-18T17%3A25%3A46%2C7897f%24841a3bd2f8e9a5ca46f505fa557d57bd"
+            # Without cookie
+            curl http://localhost:18080/account/test.json
+        """
 
-        # Without cookie
-        curl http://localhost:18080/account/test.json
-    """
+        cookie_name = config.get("login_cookie_name", "session")
+        cookie_value = request.cookies.get(cookie_name)
 
-    cookie_name = config.get("login_cookie_name", "session")
-    cookie_value = request.cookies.get(cookie_name)
+        # Parse the cookie for debugging
+        cookie_parsed = {}
+        if cookie_value:
+            decoded = unquote(cookie_value)
+            parts = decoded.split(",")
+            cookie_parsed = {
+                "raw_decoded": decoded,
+                "parts": parts,
+                "num_parts": len(parts),
+            }
+            if len(parts) == 3:
+                cookie_parsed["user_key"] = parts[0]
+                cookie_parsed["timestamp"] = parts[1]
+                cookie_parsed["hash"] = parts[2][:20] + "..." if len(parts[2]) > 20 else parts[2]
 
-    # Parse the cookie for debugging
-    cookie_parsed = {}
-    if cookie_value:
-        decoded = unquote(cookie_value)
-        parts = decoded.split(",")
-        cookie_parsed = {
-            "raw_decoded": decoded,
-            "parts": parts,
-            "num_parts": len(parts),
-        }
-        if len(parts) == 3:
-            cookie_parsed["user_key"] = parts[0]
-            cookie_parsed["timestamp"] = parts[1]
-            cookie_parsed["hash"] = parts[2][:20] + "..." if len(parts[2]) > 20 else parts[2]
-
-    return AuthTestResponse(
-        username=user.username if user else None,
-        user_key=user.user_key if user else None,
-        timestamp=user.timestamp if user else None,
-        is_authenticated=user is not None,
-        error=None,
-        cookie_name=cookie_name,
-        cookie_value=(cookie_value[:50] + "..." if cookie_value and len(cookie_value) > 50 else cookie_value),
-        cookie_parsed=cookie_parsed,
-    )
-
-
-@router.get("/account/protected.json", tags=["internal"], include_in_schema=SHOW_INTERNAL_IN_SCHEMA)
-async def protected_endpoint(
-    user: Annotated[AuthenticatedUser, Depends(require_authenticated_user)],
-) -> dict:
-    """
-    Example of a protected endpoint that requires authentication.
-
-    This endpoint will return 401 Unauthorized if the user is not authenticated.
-
-    Returns:
-        dict: Success message with user information
-
-    Raises:
-        HTTPException: 401 if not authenticated
-    """
-    return {
-        "message": f"Hello {user.username}!",
-        "user_key": user.user_key,
-        "timestamp": user.timestamp,
-    }
+        return AuthTestResponse(
+            username=user.username if user else None,
+            user_key=user.user_key if user else None,
+            timestamp=user.timestamp if user else None,
+            is_authenticated=user is not None,
+            error=None,
+            cookie_name=cookie_name,
+            cookie_value=(cookie_value[:50] + "..." if cookie_value and len(cookie_value) > 50 else cookie_value),
+            cookie_parsed=cookie_parsed,
+        )
 
 
-@router.get("/account/optional.json", tags=["internal"], include_in_schema=SHOW_INTERNAL_IN_SCHEMA)
-async def optional_auth_endpoint(
-    user: Annotated[AuthenticatedUser | None, Depends(get_authenticated_user)],
-) -> dict:
-    """
-    Example of an endpoint with optional authentication.
+    @router.get("/account/protected.json", tags=["internal"])
+    async def protected_endpoint(
+        user: Annotated[AuthenticatedUser, Depends(require_authenticated_user)],
+    ) -> dict:
+        """
+        Example of a protected endpoint that requires authentication.
 
-    This endpoint works for both authenticated and unauthenticated users,
-    returning different information based on auth status.
+        This endpoint will return 401 Unauthorized if the user is not authenticated.
 
-    Returns:
-        dict: Response with user info or anonymous message
-    """
-    if user:
+        Returns:
+            dict: Success message with user information
+
+        Raises:
+            HTTPException: 401 if not authenticated
+        """
         return {
-            "message": f"Welcome back, {user.username}!",
+            "message": f"Hello {user.username}!",
             "user_key": user.user_key,
             "timestamp": user.timestamp,
-            "is_authenticated": True,
         }
-    else:
-        return {
-            "message": "Hello, anonymous user!",
-            "is_authenticated": False,
-        }
+
+
+    @router.get("/account/optional.json", tags=["internal"])
+    async def optional_auth_endpoint(
+        user: Annotated[AuthenticatedUser | None, Depends(get_authenticated_user)],
+    ) -> dict:
+        """
+        Example of an endpoint with optional authentication.
+
+        This endpoint works for both authenticated and unauthenticated users,
+        returning different information based on auth status.
+
+        Returns:
+            dict: Response with user info or anonymous message
+        """
+        if user:
+            return {
+                "message": f"Welcome back, {user.username}!",
+                "user_key": user.user_key,
+                "timestamp": user.timestamp,
+                "is_authenticated": True,
+            }
+        else:
+            return {
+                "message": "Hello, anonymous user!",
+                "is_authenticated": False,
+            }
 
 
 class LoginForm(BaseModel):
