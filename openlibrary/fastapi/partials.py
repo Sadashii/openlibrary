@@ -42,7 +42,6 @@ async def search_facets_partial(
     - param: dict with search parameters (q, author_key, subject_facet, etc.)
     - path: str (e.g., '/search')
     - query: str (e.g., '?q=python')
-    # TODO: Make this fully async
     """
     try:
         parsed_data = json.loads(data)

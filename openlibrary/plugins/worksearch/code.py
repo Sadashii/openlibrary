@@ -544,7 +544,7 @@ class SearchResponse:
         return highlighting or None
 
 
-def do_search(
+async def do_search_async(
     param: dict,
     sort: str | None,
     page=1,
@@ -576,7 +576,7 @@ def do_search(
     if sfw:
         fields |= {'subject'}
 
-    return run_solr_query(
+    return await run_solr_query_async(
         WorkSearchScheme(),
         param,
         rows,
@@ -589,6 +589,8 @@ def do_search(
         request_label=request_label,
         solr_internals_params=solr_internals_params,
     )
+
+do_search = async_bridge.wrap(do_search_async)
 
 
 def get_doc(doc: SolrDocument):
