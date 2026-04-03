@@ -3,7 +3,6 @@ import io
 import json
 import logging
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from math import ceil
