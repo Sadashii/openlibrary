@@ -1,7 +1,5 @@
 import os
-import sys
 
-import pytest
 import web
 
 from .. import account
@@ -147,4 +145,3 @@ class TestGoodReadsImport:
         books, books_wo_isbns = account.process_goodreads_csv(web.storage({"csv": self.csv_data.decode("utf-8")}))
         assert books == self.expected_books
         assert books_wo_isbns == self.expected_books_wo_isbns
-

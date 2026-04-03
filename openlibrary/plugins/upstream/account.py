@@ -3,12 +3,12 @@ import io
 import json
 import logging
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from math import ceil
 from typing import TYPE_CHECKING, Any, Final
 from urllib.parse import urlparse
-from collections import defaultdict
 
 import requests
 import web
@@ -32,8 +32,8 @@ from openlibrary.accounts import (
     clear_cookies,
     valid_email,
 )
-from openlibrary.core import helpers as h
 from openlibrary.core import db as ol_db
+from openlibrary.core import helpers as h
 from openlibrary.core import lending, stats
 from openlibrary.core.auth import ExpiredTokenError, HMACToken, MissingKeyError
 from openlibrary.core.auth import TimedOneTimePassword as OTP
@@ -44,7 +44,7 @@ from openlibrary.core.lending import (
     get_items_and_add_availability,
     s3_loan_api,
 )
-from openlibrary.core.models import SubjectType, Edition
+from openlibrary.core.models import Edition, SubjectType
 from openlibrary.core.observations import Observations
 from openlibrary.core.ratings import Ratings
 from openlibrary.i18n import gettext as _
@@ -865,19 +865,23 @@ class fetch_goodreads(delegate.page):
         books, books_wo_isbns = process_goodreads_csv(input_csv)
         return render['account/import'](books, books_wo_isbns)
 
+
 # TODO: Need to deal with did_not_finish shelf - discussion pending
 _DEFAULT_SHELVES = {
     'to_read': 1,
     'currently_reading': 2,
     'read': 3,
-    'did_not_finish': 4
+    'did_not_finish': 4,
 }
+
 
 def _normalize_shelf(name: str) -> str:
     return name.strip().lower().translate(str.maketrans(' -', '__'))
 
+
 def _capitalize_shelf(name: str) -> str:
     return name.replace('_', ' ').title()
+
 
 class process_imports(delegate.page):
     path = "/account/import/process/goodreads"
@@ -886,16 +890,22 @@ class process_imports(delegate.page):
     def POST(self):
         raw = web.data()
         if not raw:
-            return delegate.RawText(json.dumps({"error": "missing_body"}), status="400 Bad Request")
+            return delegate.RawText(
+                json.dumps({"error": "missing_body"}), status="400 Bad Request"
+            )
 
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
-            return delegate.RawText(json.dumps({"error": "invalid_json"}), status="400 Bad Request")
+            return delegate.RawText(
+                json.dumps({"error": "invalid_json"}), status="400 Bad Request"
+            )
 
         books = data.get("books")
         if not isinstance(books, list):
-            return delegate.RawText(json.dumps({"error": "books_must_be_list"}), status="400 Bad Request")
+            return delegate.RawText(
+                json.dumps({"error": "books_must_be_list"}), status="400 Bad Request"
+            )
 
         try:
             user = accounts.get_current_user()
@@ -904,9 +914,9 @@ class process_imports(delegate.page):
             oldb = ol_db.get_db()
             existing_entries = oldb.query(
                 "SELECT work_id, bookshelf_id FROM bookshelves_books WHERE username=$username",
-                vars={'username': username}
+                vars={'username': username},
             )
-            
+
             existing_shelf_set = {
                 (str(e.work_id), int(e.bookshelf_id)) for e in existing_entries
             }
@@ -922,18 +932,31 @@ class process_imports(delegate.page):
             lists_to_save = set()
             pending_seeds = defaultdict(list)
             results = []
-            
-            db_inserts = [] 
+
+            db_inserts = []
             list_keys_cache = {}
 
             for book in books:
                 row_id = book.get('row_id')
-                
-                raw_isbn = str(book.get('isbn', '')).replace('="', '').replace('"', '').strip()
-                raw_isbn13 = str(book.get('isbn13', '')).replace('="', '').replace('"', '').strip()
+
+                raw_isbn = (
+                    str(book.get('isbn', '')).replace('="', '').replace('"', '').strip()
+                )
+                raw_isbn13 = (
+                    str(book.get('isbn13', ''))
+                    .replace('="', '')
+                    .replace('"', '')
+                    .strip()
+                )
 
                 if not raw_isbn and not raw_isbn13:
-                    results.append({"row_id": row_id, "status": "error", "reason": "No valid ISBN provided"})
+                    results.append(
+                        {
+                            "row_id": row_id,
+                            "status": "error",
+                            "reason": "No valid ISBN provided",
+                        }
+                    )
                     continue
 
                 try:
@@ -943,11 +966,14 @@ class process_imports(delegate.page):
                         try:
                             isbn13_canon = canonical(raw_isbn13)
                             isbn_val, asin = Edition.get_isbn_or_asin(isbn13_canon)
-                            
+
                             if Edition.is_valid_identifier(isbn_val, asin):
                                 forms = Edition.get_identifier_forms(isbn_val, asin)
-                                edition = next((isbn_cache[f] for f in forms if f in isbn_cache), None)
-                                
+                                edition = next(
+                                    (isbn_cache[f] for f in forms if f in isbn_cache),
+                                    None,
+                                )
+
                                 if not edition:
                                     edition = Edition.from_isbn(isbn13_canon)
                                     if edition:
@@ -960,11 +986,14 @@ class process_imports(delegate.page):
                         try:
                             isbn_canon = canonical(raw_isbn)
                             isbn_val, asin = Edition.get_isbn_or_asin(isbn_canon)
-                            
+
                             if Edition.is_valid_identifier(isbn_val, asin):
                                 forms = Edition.get_identifier_forms(isbn_val, asin)
-                                edition = next((isbn_cache[f] for f in forms if f in isbn_cache), None)
-                                
+                                edition = next(
+                                    (isbn_cache[f] for f in forms if f in isbn_cache),
+                                    None,
+                                )
+
                                 if not edition:
                                     edition = Edition.from_isbn(isbn_canon)
                                     if edition:
@@ -975,16 +1004,28 @@ class process_imports(delegate.page):
 
                     # 3. Validate successful resolution
                     if not edition or not getattr(edition, 'works', None):
-                        results.append({
-                            "row_id": row_id, 
-                            "status": "error", 
-                            "reason": "Book not found in Open Library"
-                        })
+                        results.append(
+                            {
+                                "row_id": row_id,
+                                "status": "error",
+                                "reason": "Book not found in Open Library",
+                            }
+                        )
                         continue
 
-                    work_key = edition.works[0]['key'] if isinstance(edition.works[0], dict) else getattr(edition.works[0], 'key', None)
+                    work_key = (
+                        edition.works[0]['key']
+                        if isinstance(edition.works[0], dict)
+                        else getattr(edition.works[0], 'key', None)
+                    )
                     if not work_key:
-                        results.append({"row_id": row_id, "status": "error", "reason": "Missing Work mapping"})
+                        results.append(
+                            {
+                                "row_id": row_id,
+                                "status": "error",
+                                "reason": "Missing Work mapping",
+                            }
+                        )
                         continue
 
                     work_id = str(work_key.split('/')[-1][2:-1])
@@ -993,11 +1034,14 @@ class process_imports(delegate.page):
                     shelves = set(_normalize_shelf(s) for s in book.get('shelves', []))
 
                     for norm_shelf in shelves:
-                        if norm_shelf not in _DEFAULT_SHELVES and norm_shelf not in custom_list_map:
+                        if (
+                            norm_shelf not in _DEFAULT_SHELVES
+                            and norm_shelf not in custom_list_map
+                        ):
                             new_list = user.new_list(
                                 _capitalize_shelf(norm_shelf),
                                 "Imported from Goodreads",
-                                seeds=[]
+                                seeds=[],
                             )
                             custom_list_map[norm_shelf] = new_list
                             lists_to_save.add(norm_shelf)
@@ -1008,18 +1052,20 @@ class process_imports(delegate.page):
                             if (work_id, shelf_id) in existing_shelf_set:
                                 continue
 
-                            db_inserts.append({
-                                'username': username,
-                                'bookshelf_id': shelf_id,
-                                'work_id': work_id,
-                                'edition_id': edition_id
-                            })
-                            
+                            db_inserts.append(
+                                {
+                                    'username': username,
+                                    'bookshelf_id': shelf_id,
+                                    'work_id': work_id,
+                                    'edition_id': edition_id,
+                                }
+                            )
+
                             existing_shelf_set.add((work_id, shelf_id))
 
                         elif norm_shelf in custom_list_map:
                             target_list = custom_list_map[norm_shelf]
-                            
+
                             if norm_shelf not in list_keys_cache:
                                 current_seeds = getattr(target_list, 'seeds', []) or []
                                 list_keys_cache[norm_shelf] = {
@@ -1032,14 +1078,23 @@ class process_imports(delegate.page):
 
                             pending_seeds[norm_shelf].append({"key": work_key})
                             lists_to_save.add(norm_shelf)
-                            
-                            list_keys_cache[norm_shelf].add(work_key) 
+
+                            list_keys_cache[norm_shelf].add(work_key)
 
                     results.append({"row_id": row_id, "status": "success"})
 
                 except Exception as e:
-                    logger.error(f"Error processing book with Row ID {row_id}: {e}", exc_info=True)
-                    results.append({"row_id": row_id, "status": "error", "reason": "Internal server error"})
+                    logger.error(
+                        f"Error processing book with Row ID {row_id}: {e}",
+                        exc_info=True,
+                    )
+                    results.append(
+                        {
+                            "row_id": row_id,
+                            "status": "error",
+                            "reason": "Internal server error",
+                        }
+                    )
 
             if db_inserts:
                 oldb.multiple_insert(Bookshelves.TABLENAME, db_inserts)
@@ -1047,14 +1102,21 @@ class process_imports(delegate.page):
             for list_name in lists_to_save:
                 target_list = custom_list_map[list_name]
                 if list_name in pending_seeds:
-                    target_list.seeds = list(getattr(target_list, 'seeds', []) or []) + pending_seeds[list_name]
+                    target_list.seeds = (
+                        list(getattr(target_list, 'seeds', []) or [])
+                        + pending_seeds[list_name]
+                    )
                 target_list._save(comment="Added books via Goodreads import")
 
             return delegate.RawText(json.dumps({"results": results}))
 
         except Exception as e:
             logger.error(f"Error in process_imports: {e}", exc_info=True)
-            raise web.HTTPError("500 Internal Server Error", headers={"Content-Type": "application/json"})      
+            raise web.HTTPError(
+                "500 Internal Server Error",
+                headers={"Content-Type": "application/json"},
+            )
+
 
 class PatronExportException(Exception):
     pass
@@ -1579,7 +1641,11 @@ def process_goodreads_csv(i):
     else:
         raw_bytes = i.csv
 
-    csv_payload = raw_bytes if isinstance(raw_bytes, str) else raw_bytes.decode('utf-8', errors='replace')
+    csv_payload = (
+        raw_bytes
+        if isinstance(raw_bytes, str)
+        else raw_bytes.decode('utf-8', errors='replace')
+    )
     csv_file = csv.reader(csv_payload.splitlines(), delimiter=',', quotechar='"')
     header = next(csv_file)
     books = {}

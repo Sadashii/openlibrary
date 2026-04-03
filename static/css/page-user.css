@@ -109,7 +109,6 @@ th.toggle-all {
   width: 100%;
 }
 
-
 .my-imports {
   padding: var(--spacing-page-gutter);
 }
@@ -143,8 +142,10 @@ th.toggle-all {
   background-color: var(--white);
 }
 
-.import-export {}
-.import-export__section {}
+.import-export {
+}
+.import-export__section {
+}
 
 #myProgress {
   margin-top: 5px;
