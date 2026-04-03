@@ -75,8 +75,10 @@ def _resolve_isbn(raw_isbn, isbn_cache):
                 if edition:
                     for f in forms:
                         isbn_cache[f] = edition
-            return edition
-    except Exception as e:
+
+        return edition
+
+    except (ValueError, TypeError) as e:
         logger.error(f"Error resolving ISBN {raw_isbn}: {e}")
     return None
 
