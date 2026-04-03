@@ -109,7 +109,7 @@ th.toggle-all {
   width: 100%;
 }
 
-
+/* Goodreads Imports Page */
 .my-imports {
   padding: var(--spacing-page-gutter);
 }
@@ -129,22 +129,18 @@ th.toggle-all {
 .import-table td {
   padding: var(--spacing-inset-sm) var(--spacing-inset-md);
   border-bottom: var(--border-table);
-  text-align: left;
 }
 
 .import-table thead th {
-  position: sticky;
-  top: 0;
   background-color: var(--white);
-  z-index: 1;
 }
 
 .import-table tbody tr {
   background-color: var(--white);
 }
 
-.import-export {}
-.import-export__section {}
+/* .import-export {}
+.import-export__section {} */
 
 #myProgress {
   margin-top: 5px;

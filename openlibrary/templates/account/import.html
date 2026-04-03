@@ -144,6 +144,7 @@ $def with (books=None, books_wo_isbns=None)
 
   $else:
     <div class="my-imports">
+      $ keys = ['ISBN', 'ISBN13', 'Title', 'My Rating', 'Shelves', 'Exclusive Shelf', 'Date Read']
 
       $if books:
         <form method="POST"
@@ -166,7 +167,6 @@ $def with (books=None, books_wo_isbns=None)
             </div>
           </div>
 
-          $ keys = ['ISBN', 'ISBN13', 'Title', 'My Rating', 'Shelves', 'Exclusive Shelf', 'Date Read']
 
           <div class="import-section">
             <h3>$_("Books Ready to Import")</h3>
@@ -182,8 +182,8 @@ $def with (books=None, books_wo_isbns=None)
                     $for key in keys:
                       <th>$key</th>
 
-                    <th class="import-status hidden">Status</th>
-                    <th class="status-reason hidden">Reason</th>
+                    <th class="import-status hidden">$_('Status')</th>
+                    <th class="status-reason hidden">$_('Reason')</th>
                   </tr>
                 </thead>
 
@@ -273,12 +273,29 @@ $def with (books=None, books_wo_isbns=None)
 
 </div>
 
+<div id="js-i18n-strings" class="hidden" style="display: none;"
+     data-importing="$_('Importing, please wait...')"
+     data-imported="$_('Imported')"
+     data-error="$_('Error')"
+     data-unknown-error="$_('Unknown error')"
+     data-error-fallback="$_('Something went wrong. Try again.')"
+     data-import-single="$_('Import 1 Book')"
+     data-import-plural="$_('Import {count} Books')"
+     data-done-summary="$_('Done - {succeeded} imported, {errors} failed')">
+</div>
+
 <script>
+  const i18n = document.getElementById('js-i18n-strings').dataset;
+
   function updateImportCount() {
     const count = document.querySelectorAll('.add-book:checked').length;
     const btn = document.querySelector('.import-submit');
     if (btn) {
-      btn.textContent = `Import $${count} Book$${count !== 1 ? 's' : ''}`;
+      if (count === 1) {
+        btn.textContent = i18n.importSingle;
+      } else {
+        btn.textContent = i18n.importPlural.replace('{count}', count);
+      }
       btn.disabled = count === 0;
     }
   }
@@ -306,7 +323,7 @@ $def with (books=None, books_wo_isbns=None)
     const btn = document.querySelector('.import-submit');
 
     btn.disabled = true;
-    btn.textContent = "Importing, please wait...";
+    btn.textContent = i18n.importing;
 
     document.querySelectorAll('.import-status, .status-reason').forEach(el => {
       el.classList.remove('hidden');
@@ -352,22 +369,24 @@ $def with (books=None, books_wo_isbns=None)
         const reasonCell = row.querySelector('.status-reason');
 
         if (result.status === 'success') {
-          statusCell.textContent = 'Imported';
+          statusCell.textContent = i18n.imported;
           statusCell.classList.add('success-imported');
         } else {
           errors++;
-          statusCell.textContent = 'Error';
+          statusCell.textContent = i18n.error;
           statusCell.classList.add('error-imported');
-          reasonCell.textContent = result.reason || 'Unknown error';
+          reasonCell.textContent = result.reason || i18n.unknownError;
         }
       });
 
       const succeeded = data.results.length - errors;
-      btn.textContent = `Done - $${succeeded} imported, $${errors} failed`;
+      btn.textContent = i18n.doneSummary
+        .replace('{succeeded}', succeeded)
+        .replace('{errors}', errors);
 
     } catch (err) {
       console.error(err);
-      btn.textContent = "Something went wrong. Try again.";
+      btn.textContent = i18n.errorFallback;
       btn.disabled = false;
     }
   });

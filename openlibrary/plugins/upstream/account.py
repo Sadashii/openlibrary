@@ -865,12 +865,10 @@ class fetch_goodreads(delegate.page):
         books, books_wo_isbns = process_goodreads_csv(input_csv)
         return render['account/import'](books, books_wo_isbns)
 
-# TODO: Need to deal with did_not_finish shelf - discussion pending
 _DEFAULT_SHELVES = {
     'to_read': 1,
     'currently_reading': 2,
     'read': 3,
-    'did_not_finish': 4
 }
 
 def _normalize_shelf(name: str) -> str:
@@ -886,16 +884,16 @@ class process_imports(delegate.page):
     def POST(self):
         raw = web.data()
         if not raw:
-            return delegate.RawText(json.dumps({"error": "missing_body"}), status="400 Bad Request")
+            return delegate.RawText(json.dumps({"error": "missing_body"}), status="400 Bad Request", content_type="application/json")
 
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
-            return delegate.RawText(json.dumps({"error": "invalid_json"}), status="400 Bad Request")
+            return delegate.RawText(json.dumps({"error": "invalid_json"}), status="400 Bad Request", content_type="application/json")
 
         books = data.get("books")
         if not isinstance(books, list):
-            return delegate.RawText(json.dumps({"error": "books_must_be_list"}), status="400 Bad Request")
+            return delegate.RawText(json.dumps({"error": "books_must_be_list"}), status="400 Bad Request", content_type="application/json")
 
         try:
             user = accounts.get_current_user()
@@ -927,6 +925,14 @@ class process_imports(delegate.page):
             list_keys_cache = {}
 
             for book in books:
+                if not isinstance(book, dict):
+                    results.append({
+                        "row_id": None, 
+                        "status": "error", 
+                        "reason": "Invalid book format payload. Expected a dictionary object."
+                    })
+                    continue
+
                 row_id = book.get('row_id')
                 
                 raw_isbn = str(book.get('isbn', '')).replace('="', '').replace('"', '').strip()
@@ -1050,7 +1056,7 @@ class process_imports(delegate.page):
                     target_list.seeds = list(getattr(target_list, 'seeds', []) or []) + pending_seeds[list_name]
                 target_list._save(comment="Added books via Goodreads import")
 
-            return delegate.RawText(json.dumps({"results": results}))
+            return delegate.RawText(json.dumps({"results": results}), content_type="application/json")
 
         except Exception as e:
             logger.error(f"Error in process_imports: {e}", exc_info=True)
