@@ -9,7 +9,7 @@ from infogami.utils.view import require_login
 from openlibrary import accounts
 from openlibrary.core import db as ol_db
 from openlibrary.core.bookshelves import Bookshelves
-from openlibrary.core.bookshelves_events import BookshelvesEvents
+from openlibrary.core.bookshelves_events import BookshelfEvent, BookshelvesEvents
 from openlibrary.core.models import Edition, Ratings
 from openlibrary.plugins.upstream.checkins import make_date_string
 from openlibrary.utils import extract_numeric_id_from_olid
@@ -111,6 +111,7 @@ def _prepare_import_context(user, username, oldb):
         "lists_to_save": set(),
         "pending_seeds": defaultdict(list),
         "db_inserts": [],
+        "pending_events": [],
     }
 
 def _process_book_shelves(
@@ -263,13 +264,13 @@ def _process_single_book(book, user, username, ctx):
                 if year:
                     date_str = make_date_string(year, month, day)
 
-                    BookshelvesEvents.create_event(
-                        username=username,
-                        work_id=work_id,
-                        edition_id=edition_id,
-                        date_str=date_str,
-                        event_type=BookshelvesEvents.FINISH
-                    )
+                ctx["pending_events"].append({
+                    'username': username,
+                    'work_id': work_id,
+                    'edition_id': edition_id or BookshelvesEvents.NULL_EDITION_ID,
+                    'event_date': date_str,
+                    'event_type': BookshelfEvent.FINISH,
+                })
             except (ValueError, TypeError) as e:
                 logger.warning(f"Failed to parse date_read '{raw_date_read}' for row {row_id}: {e}")
 
@@ -294,6 +295,9 @@ def _process_books(books, user, username, ctx):
 def _commit_changes(oldb, ctx):
     if ctx["db_inserts"]:
         oldb.multiple_insert(Bookshelves.TABLENAME, ctx["db_inserts"])
+
+    if ctx["pending_events"]:                                          # add this block
+        oldb.multiple_insert(BookshelvesEvents.TABLENAME, ctx["pending_events"])
 
     for list_name in ctx["lists_to_save"]:
         target_list = ctx["custom_list_map"][list_name]
