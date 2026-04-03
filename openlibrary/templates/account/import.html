@@ -191,9 +191,11 @@ $def with (books=None, books_wo_isbns=None)
                   $for isbn in books:
                     $ shelves_raw = books[isbn].get('Bookshelves', '')
                     $ parsed_shelves = [s.strip() for s in str(shelves_raw).split(",") if s.strip()]
+                    $ exclusive_shelf = str(books[isbn].get('Exclusive Shelf', '')).strip()
+                    $ exclusive_shelf and exclusive_shelf not in parsed_shelves and parsed_shelves.append(exclusive_shelf)
                     $ joined_shelves = ", ".join(parsed_shelves)
-                    $ clean_isbn = str(books[isbn].get('ISBN', '')).replace('="', '').replace('"', '')
-                    $ clean_isbn13 = str(books[isbn].get('ISBN13', '')).replace('="', '').replace('"', '')
+                    $ clean_isbn = str(books[isbn].get("ISBN"))
+                    $ clean_isbn13 = str(books[isbn].get("ISBN13"))
                     $ rating = str(books[isbn].get('My Rating', ''))
                     $ date_read = str(books[isbn].get('Date Read', ''))
 
