@@ -1732,10 +1732,10 @@ msgstr ""
 msgid "Added Time"
 msgstr ""
 
-#: account/loans.html admin/imports.html admin/imports_by_date.html
-#: admin/loans_table.html admin/menu.html batch_import_pending_view.html
-#: batch_import_view.html librarian_dashboard/data_quality_table.html
-#: status.html
+#: account/import.html account/loans.html admin/imports.html
+#: admin/imports_by_date.html admin/loans_table.html admin/menu.html
+#: batch_import_pending_view.html batch_import_view.html
+#: librarian_dashboard/data_quality_table.html status.html
 msgid "Status"
 msgstr ""
 
@@ -1780,8 +1780,8 @@ msgstr ""
 msgid "Import Time"
 msgstr ""
 
-#: admin/imports.html admin/imports_by_date.html batch_import_view.html
-#: librarian_dashboard/data_quality_table.html
+#: account/import.html admin/imports.html admin/imports_by_date.html
+#: batch_import_view.html librarian_dashboard/data_quality_table.html
 msgid "Error"
 msgstr ""
 
@@ -2879,6 +2879,10 @@ msgid "Books Ready to Import"
 msgstr ""
 
 #: account/import.html
+msgid "Reason"
+msgstr ""
+
+#: account/import.html
 msgid "No valid books with ISBNs found to import."
 msgstr ""
 
@@ -2894,6 +2898,34 @@ msgstr ""
 msgid ""
 "Unfortunately, these books do not have ISBN codes and currently we can't "
 "import these."
+msgstr ""
+
+#: account/import.html
+msgid "Importing, please wait..."
+msgstr ""
+
+#: account/import.html
+msgid "Imported"
+msgstr ""
+
+#: account/import.html
+msgid "Unknown error"
+msgstr ""
+
+#: account/import.html
+msgid "Something went wrong. Try again."
+msgstr ""
+
+#: account/import.html
+msgid "Import 1 Book"
+msgstr ""
+
+#: account/import.html
+msgid "Import {count} Books"
+msgstr ""
+
+#: account/import.html
+msgid "Done - {succeeded} imported, {errors} failed"
 msgstr ""
 
 #: account/loan_history.html
