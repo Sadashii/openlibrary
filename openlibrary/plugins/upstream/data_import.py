@@ -84,6 +84,7 @@ def _resolve_isbn(raw_isbn, isbn_cache):
 def _get_edition_for_book(raw_isbn13, raw_isbn, isbn_cache):
     return _resolve_isbn(raw_isbn13, isbn_cache) or _resolve_isbn(raw_isbn, isbn_cache)
 
+
 def _setup_user_context():
     user = accounts.get_current_user()
     username = user.key.split('/')[-1]
@@ -113,6 +114,7 @@ def _prepare_import_context(user, username, oldb):
         "db_inserts": [],
         "pending_events": [],
     }
+
 
 def _process_book_shelves(
     book,
@@ -165,7 +167,11 @@ def _process_book_shelves(
             if norm_shelf not in list_keys_cache:
                 current_seeds = getattr(target_list, 'seeds', []) or []
                 list_keys_cache[norm_shelf] = {
-                    s.key if hasattr(s, 'key') else (s.get('key') if isinstance(s, dict) else s)
+                    (
+                        s.key
+                        if hasattr(s, 'key')
+                        else (s.get('key') if isinstance(s, dict) else s)
+                    )
                     for s in current_seeds
                 }
 
@@ -247,7 +253,7 @@ def _process_single_book(book, user, username, ctx):
                         username=username,
                         work_id=work_id,
                         rating=rating_val,
-                        edition_id=edition_id
+                        edition_id=edition_id,
                     )
             except (ValueError, TypeError):
                 logger.warning(f"Invalid rating value '{raw_rating}' for row {row_id}")
@@ -257,22 +263,38 @@ def _process_single_book(book, user, username, ctx):
             try:
                 date_parts = str(raw_date_read).replace("/", "-").strip().split("-")
 
-                year = int(date_parts[0]) if len(date_parts) > 0 and date_parts[0] else None
-                month = int(date_parts[1]) if len(date_parts) > 1 and date_parts[1] else None
-                day = int(date_parts[2]) if len(date_parts) > 2 and date_parts[2] else None
+                year = (
+                    int(date_parts[0])
+                    if len(date_parts) > 0 and date_parts[0]
+                    else None
+                )
+                month = (
+                    int(date_parts[1])
+                    if len(date_parts) > 1 and date_parts[1]
+                    else None
+                )
+                day = (
+                    int(date_parts[2])
+                    if len(date_parts) > 2 and date_parts[2]
+                    else None
+                )
 
                 if year:
                     date_str = make_date_string(year, month, day)
 
-                ctx["pending_events"].append({
-                    'username': username,
-                    'work_id': work_id,
-                    'edition_id': edition_id or BookshelvesEvents.NULL_EDITION_ID,
-                    'event_date': date_str,
-                    'event_type': BookshelfEvent.FINISH,
-                })
+                ctx["pending_events"].append(
+                    {
+                        'username': username,
+                        'work_id': work_id,
+                        'edition_id': edition_id or BookshelvesEvents.NULL_EDITION_ID,
+                        'event_date': date_str,
+                        'event_type': BookshelfEvent.FINISH,
+                    }
+                )
             except (ValueError, TypeError) as e:
-                logger.warning(f"Failed to parse date_read '{raw_date_read}' for row {row_id}: {e}")
+                logger.warning(
+                    f"Failed to parse date_read '{raw_date_read}' for row {row_id}: {e}"
+                )
 
         return {"row_id": row_id, "status": "success"}
 
@@ -296,7 +318,7 @@ def _commit_changes(oldb, ctx):
     if ctx["db_inserts"]:
         oldb.multiple_insert(Bookshelves.TABLENAME, ctx["db_inserts"])
 
-    if ctx["pending_events"]:                                          # add this block
+    if ctx["pending_events"]:  # add this block
         oldb.multiple_insert(BookshelvesEvents.TABLENAME, ctx["pending_events"])
 
     for list_name in ctx["lists_to_save"]:
@@ -331,8 +353,7 @@ class process_imports(delegate.page):
             _commit_changes(oldb, ctx)
 
             return delegate.RawText(
-                json.dumps({"results": results}),
-                content_type="application/json"
+                json.dumps({"results": results}), content_type="application/json"
             )
 
         except Exception as e:
