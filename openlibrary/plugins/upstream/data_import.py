@@ -271,8 +271,7 @@ class process_imports(delegate.page):
             _commit_changes(oldb, ctx)
 
             return delegate.RawText(
-                json.dumps({"results": results}),
-                content_type="application/json"
+                json.dumps({"results": results}), content_type="application/json"
             )
 
         except Exception as e:
