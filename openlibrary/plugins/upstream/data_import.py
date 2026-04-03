@@ -1,13 +1,16 @@
 import json
-import web
-from collections import defaultdict
 import logging
+from collections import defaultdict
 
-from openlibrary.core import delegate, accounts, ol_db
-from openlibrary.plugins.upstream.utils import require_login
-from openlibrary.core.models import Edition
+import web
+
+from infogami.utils import delegate
+from infogami.utils.view import require_login
+from openlibrary import accounts
+from openlibrary.core import db as ol_db
 from openlibrary.core.bookshelves import Bookshelves
-from openlibrary.utils import canonical
+from openlibrary.core.models import Edition
+from openlibrary.utils.isbn import canonical
 
 logger = logging.getLogger("openlibrary.dataimporter")
 
@@ -27,27 +30,27 @@ def _validate_payload(raw_data):
     """Validates the incoming JSON payload from the request."""
     if not raw_data:
         return None, delegate.RawText(
-            json.dumps({"error": "missing_body"}), 
-            status="400 Bad Request", 
+            json.dumps({"error": "missing_body"}),
+            status="400 Bad Request",
             content_type="application/json"
         )
     try:
         data = json.loads(raw_data)
     except json.JSONDecodeError:
         return None, delegate.RawText(
-            json.dumps({"error": "invalid_json"}), 
-            status="400 Bad Request", 
+            json.dumps({"error": "invalid_json"}),
+            status="400 Bad Request",
             content_type="application/json"
         )
-    
+
     books = data.get("books")
     if not isinstance(books, list):
         return None, delegate.RawText(
-            json.dumps({"error": "books_must_be_list"}), 
-            status="400 Bad Request", 
+            json.dumps({"error": "books_must_be_list"}),
+            status="400 Bad Request",
             content_type="application/json"
         )
-        
+
     return books, None
 
 def _resolve_isbn(raw_isbn, isbn_cache):
@@ -70,7 +73,6 @@ def _resolve_isbn(raw_isbn, isbn_cache):
                         isbn_cache[f] = edition
             return edition
     except Exception as e:
-        # Assuming logger is defined globally in your file
         logger.error(f"Error resolving ISBN {raw_isbn}: {e}")
     return None
 
@@ -87,7 +89,6 @@ def _process_book_shelves(book, user, username, work_id, work_key, edition_id,
                           existing_shelf_set, custom_list_map, list_keys_cache,
                           db_inserts, pending_seeds, lists_to_save):
     """Handles mapping a book's shelves to DB inserts or custom list seeds."""
-    # Ruff C401 fix applied here:
     shelves = {_normalize_shelf(s) for s in book.get('shelves', [])}
 
     for norm_shelf in shelves:
@@ -141,7 +142,7 @@ class process_imports(delegate.page):
     @require_login
     def POST(self):
         raw = web.data()
-        
+
         books, error_response = _validate_payload(raw)
         if error_response:
             return error_response
@@ -179,8 +180,8 @@ class process_imports(delegate.page):
             for book in books:
                 if not isinstance(book, dict):
                     results.append({
-                        "row_id": None, 
-                        "status": "error", 
+                        "row_id": None,
+                        "status": "error",
                         "reason": "Invalid book format payload. Expected a dictionary object."
                     })
                     continue
@@ -205,7 +206,7 @@ class process_imports(delegate.page):
                         if isinstance(edition.works[0], dict)
                         else getattr(edition.works[0], 'key', None)
                     )
-                    
+
                     if not work_key:
                         results.append({"row_id": row_id, "status": "error", "reason": "Missing Work mapping"})
                         continue
@@ -251,3 +252,7 @@ class process_imports(delegate.page):
                 "500 Internal Server Error",
                 headers={"Content-Type": "application/json"},
             )
+
+
+def setup():
+    pass
