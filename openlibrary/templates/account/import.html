@@ -10,7 +10,7 @@ $def with (books=None, books_wo_isbns=None)
         <form method="POST" action="/account/import/goodreads"
               enctype="multipart/form-data"
               class="olform olform--decoration mt-2">
-          
+
           <div>
             <input required type="file" name="csv" class="file-input" />
             <br>
@@ -41,7 +41,7 @@ $def with (books=None, books_wo_isbns=None)
         <form method="GET" action="/account/export"
               enctype="multipart/form-data"
               class="olform olform--decoration patron-export-form mt-2">
-          
+
           <input type="hidden" name="type" value="reading_log">
           <div>
             <input type="submit"
@@ -63,7 +63,7 @@ $def with (books=None, books_wo_isbns=None)
         <form method="GET" action="/account/export"
               enctype="multipart/form-data"
               class="olform olform--decoration patron-export-form mt-2">
-          
+
           <input type="hidden" name="type" value="book_notes">
           <div>
             <input type="submit"
@@ -85,7 +85,7 @@ $def with (books=None, books_wo_isbns=None)
         <form method="GET" action="/account/export"
               enctype="multipart/form-data"
               class="olform olform--decoration patron-export-form mt-2">
-          
+
           <input type="hidden" name="type" value="reviews">
           <div>
             <input type="submit"
@@ -107,7 +107,7 @@ $def with (books=None, books_wo_isbns=None)
         <form method="GET" action="/account/export"
               enctype="multipart/form-data"
               class="olform olform--decoration patron-export-form mt-2">
-          
+
           <input type="hidden" name="type" value="lists">
           <div>
             <input type="submit"
@@ -129,7 +129,7 @@ $def with (books=None, books_wo_isbns=None)
         <form method="GET" action="/account/export"
               enctype="multipart/form-data"
               class="olform olform--decoration patron-export-form mt-2">
-          
+
           <input type="hidden" name="type" value="ratings">
           <div>
             <input type="submit"
@@ -336,7 +336,7 @@ $def with (books=None, books_wo_isbns=None)
       const isbn = row.dataset.isbn;
       const isbn13 = row.dataset.isbn13;
       const shelvesStr = row.dataset.shelves || "";
-      
+
       const shelvesArray = shelvesStr.split(',').map(s => s.trim()).filter(Boolean);
 
       booksToImport.push({
