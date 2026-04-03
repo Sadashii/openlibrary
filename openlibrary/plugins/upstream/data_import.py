@@ -22,9 +22,11 @@ _DEFAULT_SHELVES = {
     'read': 3,
 }
 
+
 def _normalize_shelf_name(name: str) -> str:
     """Standardizes shelf names for consistent lookup and creation."""
     return name.strip().lower().translate(str.maketrans(' -', '__'))
+
 
 def _get_edition_from_isbn(isbn, isbn_cache):
     """Retrieves an Edition via ISBN/ASIN, using a memory cache to avoid redundant lookups."""
@@ -48,6 +50,7 @@ def _get_edition_from_isbn(isbn, isbn_cache):
 
     return edition
 
+
 def _prepare_context(user, username, oldb):
     """Initializes the shared memory state and queues for batch database inserts."""
     books_already_in_default_bookshelves = oldb.query(
@@ -57,7 +60,8 @@ def _prepare_context(user, username, oldb):
 
     return {
         "books_in_bookshelves": {  # To check if book already in bookshelf
-            (int(e.work_id), int(e.bookshelf_id)) for e in books_already_in_default_bookshelves
+            (int(e.work_id), int(e.bookshelf_id))
+            for e in books_already_in_default_bookshelves
         },
         "lists_map": {  # list-name: list object
             _normalize_shelf_name(lst.name): lst
@@ -66,13 +70,18 @@ def _prepare_context(user, username, oldb):
         },
         "isbn_cache": {},
         "works_in_list_cache": {},
-        "lists_to_save": set(),               # Tracks dirty lists
-        "pending_seeds": defaultdict(list),   # Queues new books to be added to custom lists
-        "pending_bookshelf_inserts": [],      # Queues raw rows for the bookshelves_books table
-        "pending_dateread_events": [],        # Queues raw rows for the bookshelves_events (dates read) table
+        "lists_to_save": set(),  # Tracks dirty lists
+        "pending_seeds": defaultdict(
+            list
+        ),  # Queues new books to be added to custom lists
+        "pending_bookshelf_inserts": [],  # Queues raw rows for the bookshelves_books table
+        "pending_dateread_events": [],  # Queues raw rows for the bookshelves_events (dates read) table
     }
 
-def _process_this_books_shelves(book, user, username, work_id, work_key, edition_id, ctx):
+
+def _process_this_books_shelves(
+    book, user, username, work_id, work_key, edition_id, ctx
+):
     """Maps Goodreads shelves to Open Library shelves/lists, and handles list/book insertions."""
     shelves = {_normalize_shelf_name(s) for s in book.get('shelves', [])}
 
@@ -94,12 +103,14 @@ def _process_this_books_shelves(book, user, username, work_id, work_key, edition
             if (work_id, shelf_id) in ctx['books_in_bookshelves']:
                 continue
 
-            ctx['pending_bookshelf_inserts'].append({
-                'username': username,
-                'bookshelf_id': shelf_id,
-                'work_id': work_id,
-                'edition_id': edition_id,
-            })
+            ctx['pending_bookshelf_inserts'].append(
+                {
+                    'username': username,
+                    'bookshelf_id': shelf_id,
+                    'work_id': work_id,
+                    'edition_id': edition_id,
+                }
+            )
             ctx['books_in_bookshelves'].add((work_id, shelf_id))
 
         # 3. Handle adding books to custom lists
@@ -119,6 +130,7 @@ def _process_this_books_shelves(book, user, username, work_id, work_key, edition
             ctx['pending_seeds'][norm_shelf].append({"key": work_key})
             ctx['lists_to_save'].add(norm_shelf)
             ctx['works_in_list_cache'][norm_shelf].add(work_key)
+
 
 def _process_this_books_rating(book, username, work_id, edition_id, ctx):
     """
@@ -142,10 +154,13 @@ def _process_this_books_rating(book, username, work_id, edition_id, ctx):
                 username=username,
                 work_id=work_id,
                 rating=rating_val,
-                edition_id=edition_id
+                edition_id=edition_id,
             )
     except (ValueError, TypeError):
-        logger.warning(f"Invalid rating value '{raw_rating}' for row {book.get('row_id', '')}")
+        logger.warning(
+            f"Invalid rating value '{raw_rating}' for row {book.get('row_id', '')}"
+        )
+
 
 def _process_this_book_date_read(book, username, work_id, edition_id, ctx):
     """Parses completion dates and queues the event insertion."""
@@ -155,7 +170,11 @@ def _process_this_book_date_read(book, username, work_id, edition_id, ctx):
         return
 
     try:
-        parts = [int(p) for p in str(raw_date_read).replace("/", "-").strip().split("-") if p.strip()]
+        parts = [
+            int(p)
+            for p in str(raw_date_read).replace("/", "-").strip().split("-")
+            if p.strip()
+        ]
         if not parts:
             return
 
@@ -163,20 +182,29 @@ def _process_this_book_date_read(book, username, work_id, edition_id, ctx):
         month = parts[1] if len(parts) > 1 else None
         day = parts[2] if len(parts) > 2 else None
 
-        ctx["pending_dateread_events"].append({
-            'username': username,
-            'work_id': work_id,
-            'edition_id': edition_id or BookshelvesEvents.NULL_EDITION_ID,
-            'event_date': make_date_string(year, month, day),
-            'event_type': BookshelfEvent.FINISH,
-        })
+        ctx["pending_dateread_events"].append(
+            {
+                'username': username,
+                'work_id': work_id,
+                'edition_id': edition_id or BookshelvesEvents.NULL_EDITION_ID,
+                'event_date': make_date_string(year, month, day),
+                'event_type': BookshelfEvent.FINISH,
+            }
+        )
     except (ValueError, TypeError) as e:
-        logger.warning(f"Failed to parse date_read '{raw_date_read}' for row {book.get('row_id', '')}: {e}")
+        logger.warning(
+            f"Failed to parse date_read '{raw_date_read}' for row {book.get('row_id', '')}: {e}"
+        )
+
 
 def _process_book(book, user, username, ctx):
     """Master processor for resolving a book's identity and delegating its data processing."""
     if not isinstance(book, dict):
-        return {"row_id": None, "status": "error", "reason": "Invalid book format payload. Expected a dictionary object."}
+        return {
+            "row_id": None,
+            "status": "error",
+            "reason": "Invalid book format payload. Expected a dictionary object.",
+        }
 
     row_id = book.get('row_id', '')
 
@@ -187,13 +215,27 @@ def _process_book(book, user, username, ctx):
         return {"row_id": row_id, "status": "error", "reason": "No valid ISBN provided"}
 
     try:
-        edition = _get_edition_from_isbn(isbn13, ctx["isbn_cache"]) or _get_edition_from_isbn(isbn, ctx["isbn_cache"])
+        edition = _get_edition_from_isbn(
+            isbn13, ctx["isbn_cache"]
+        ) or _get_edition_from_isbn(isbn, ctx["isbn_cache"])
         if not edition or not getattr(edition, 'works', None):
-            return {"row_id": row_id, "status": "error", "reason": "Book not found in Open Library"}
+            return {
+                "row_id": row_id,
+                "status": "error",
+                "reason": "Book not found in Open Library",
+            }
 
-        work_key = edition.works[0]['key'] if isinstance(edition.works[0], dict) else getattr(edition.works[0], 'key', None)
+        work_key = (
+            edition.works[0]['key']
+            if isinstance(edition.works[0], dict)
+            else getattr(edition.works[0], 'key', None)
+        )
         if not work_key:
-            return {"row_id": row_id, "status": "error", "reason": "Missing Work mapping"}
+            return {
+                "row_id": row_id,
+                "status": "error",
+                "reason": "Missing Work mapping",
+            }
 
         work_id = extract_numeric_id_from_olid(work_key)
         edition_id = extract_numeric_id_from_olid(edition.key)
@@ -202,7 +244,9 @@ def _process_book(book, user, username, ctx):
         # Ratings must be processed first so it can register the "Already Read" side-effect
         # in the context dictionary before the shelves processor runs.
         _process_this_books_rating(book, username, work_id, edition_id, ctx)
-        _process_this_books_shelves(book, user, username, work_id, work_key, edition_id, ctx)
+        _process_this_books_shelves(
+            book, user, username, work_id, work_key, edition_id, ctx
+        )
         _process_this_book_date_read(book, username, work_id, edition_id, ctx)
 
         return {"row_id": row_id, "status": "success"}
@@ -211,19 +255,25 @@ def _process_book(book, user, username, ctx):
         logger.error(f"Error processing book with Row ID {row_id}: {e}", exc_info=True)
         return {"row_id": row_id, "status": "error", "reason": "Internal server error"}
 
+
 def _commit_changes(oldb, ctx):
     """Executes all bulk inserts and saves custom list modifications."""
     if ctx["pending_bookshelf_inserts"]:
         oldb.multiple_insert(Bookshelves.TABLENAME, ctx["pending_bookshelf_inserts"])
 
     if ctx["pending_dateread_events"]:
-        oldb.multiple_insert(BookshelvesEvents.TABLENAME, ctx["pending_dateread_events"])
+        oldb.multiple_insert(
+            BookshelvesEvents.TABLENAME, ctx["pending_dateread_events"]
+        )
 
     for list_name in ctx["lists_to_save"]:
         target_list = ctx["lists_map"][list_name]
 
         if list_name in ctx["pending_seeds"]:
-            target_list.seeds = list(getattr(target_list, 'seeds', []) or []) + ctx["pending_seeds"][list_name]
+            target_list.seeds = (
+                list(getattr(target_list, 'seeds', []) or [])
+                + ctx["pending_seeds"][list_name]
+            )
 
         target_list._save(comment="Added books via Goodreads import")
 
@@ -239,7 +289,7 @@ class process_imports(delegate.page):
             return delegate.RawText(
                 json.dumps({"error": "missing_body"}),
                 status="400 Bad Request",
-                content_type="application/json"
+                content_type="application/json",
             )
 
         try:
@@ -248,7 +298,7 @@ class process_imports(delegate.page):
             return delegate.RawText(
                 json.dumps({"error": "invalid_json"}),
                 status="400 Bad Request",
-                content_type="application/json"
+                content_type="application/json",
             )
 
         books = data.get("books")
@@ -256,7 +306,7 @@ class process_imports(delegate.page):
             return delegate.RawText(
                 json.dumps({"error": "books_must_be_list"}),
                 status="400 Bad Request",
-                content_type="application/json"
+                content_type="application/json",
             )
 
         try:
@@ -280,6 +330,7 @@ class process_imports(delegate.page):
                 "500 Internal Server Error",
                 headers={"Content-Type": "application/json"},
             )
+
 
 def setup():
     pass
