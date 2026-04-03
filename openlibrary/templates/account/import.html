@@ -164,6 +164,13 @@ $def with (books=None, books_wo_isbns=None)
                       onclick="window.location.reload();">
                 $_("Cancel")
               </button>
+              
+              <a href="/account/books" 
+                 id="go-to-log-btn" 
+                 class="hidden cta-btn cta-btn--available cta-btn--small"
+                 data-ol-link-track="PatronImports|ViewLog">
+                $_("Go to My Books")
+              </a>
             </div>
           </div>
 
@@ -199,7 +206,13 @@ $def with (books=None, books_wo_isbns=None)
                     $ rating = str(books[isbn].get('My Rating', ''))
                     $ date_read = str(books[isbn].get('Date Read', ''))
 
-                    <tr class="table-row" data-rowid="$isbn" data-isbn="$clean_isbn" data-isbn13="$clean_isbn13" data-shelves="$joined_shelves" data-rating="$rating" data-date-read="$date_read">
+                    <tr class="table-row" 
+                        data-rowid="$isbn" 
+                        data-isbn="$clean_isbn" 
+                        data-isbn13="$clean_isbn13" 
+                        data-shelves="$joined_shelves" 
+                        data-rating="$rating" 
+                        data-date-read="$date_read">
                       <td>
                         <input type="checkbox"
                                class="add-book"
@@ -249,6 +262,7 @@ $def with (books=None, books_wo_isbns=None)
                 <tr>
                   $for key in keys:
                     <th>$key</th>
+                  <th>$_("Action")</th>
                 </tr>
               </thead>
 
@@ -267,6 +281,11 @@ $def with (books=None, books_wo_isbns=None)
                         $else:
                           $books_wo_isbns[id].get(key, '-')
                       </td>
+                    <td>
+                      <a href="/search?title=$urlquote(books_wo_isbns[id].get('Title', ''))&author=$urlquote(books_wo_isbns[id].get('Author', ''))" target="_blank" class="cta-btn cta-btn--small">
+                        $_("Search OL")
+                      </a>
+                    </td>
                   </tr>
               </tbody>
             </table>
@@ -292,9 +311,11 @@ $def with (books=None, books_wo_isbns=None)
   const i18n = document.getElementById('js-i18n-strings').dataset;
 
   function updateImportCount() {
-    const count = document.querySelectorAll('.add-book:checked').length;
+    const checkboxes = document.querySelectorAll('.add-book:not(:disabled)');
+    const count = Array.from(checkboxes).filter(cb => cb.checked).length;
     const btn = document.querySelector('.import-submit');
-    if (btn) {
+    
+    if (btn && btn.dataset.state !== 'importing' && btn.dataset.state !== 'done') {
       if (count === 1) {
         btn.textContent = i18n.importSingle;
       } else {
@@ -305,10 +326,18 @@ $def with (books=None, books_wo_isbns=None)
   }
 
   document.addEventListener('change', function (e) {
+    const btn = document.querySelector('.import-submit');
+    
+    if (btn && btn.dataset.state === 'done') {
+        btn.dataset.state = 'ready';
+    }
+
     if (e.target.matches('th.toggle-all input')) {
       const checked = e.target.checked;
       document.querySelectorAll('.add-book').forEach(cb => {
-        cb.checked = checked;
+        if (!cb.disabled) {
+            cb.checked = checked;
+        }
       });
       updateImportCount();
     }
@@ -325,13 +354,26 @@ $def with (books=None, books_wo_isbns=None)
 
     const form = e.target;
     const btn = document.querySelector('.import-submit');
+    const masterToggle = document.querySelector('th.toggle-all input');
 
+    btn.dataset.state = 'importing';
     btn.disabled = true;
+    if (masterToggle) masterToggle.disabled = true;
+    document.querySelectorAll('.add-book').forEach(cb => cb.disabled = true);
+    
+    document.body.style.cursor = 'wait';
+    btn.style.cursor = 'wait';
     btn.textContent = i18n.importing;
 
-    document.querySelectorAll('.import-status, .status-reason').forEach(el => {
-      el.classList.remove('hidden');
+    document.querySelectorAll('.add-book:checked').forEach(cb => {
+        const row = cb.closest('tr');
+        row.querySelector('.import-status').classList.remove('hidden');
+        row.querySelector('.status-reason').classList.remove('hidden');
+        row.style.backgroundColor = '';
+        row.style.opacity = '1';
     });
+
+    document.querySelectorAll('th.import-status, th.status-reason').forEach(el => el.classList.remove('hidden'));
 
     const booksToImport = [];
     document.querySelectorAll('.add-book:checked').forEach(cb => {
@@ -351,47 +393,123 @@ $def with (books=None, books_wo_isbns=None)
       });
     });
 
-    const payload = { books: booksToImport };
+    const chunkSize = 20;
+    let processed = 0;
+    let errors = 0;
+    let succeeded = 0;
 
-    try {
-      const res = await fetch(form.action, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
+    for (let i = 0; i < booksToImport.length; i += chunkSize) {
+      const chunk = booksToImport.slice(i, i + chunkSize);
+      const payload = { books: chunk };
 
-      const data = await res.json();
-      let errors = 0;
+      try {
+        if (booksToImport.length > chunkSize) {
+            btn.textContent = i18n.importing + " (" + processed + "/" + booksToImport.length + ")";
+        }
 
-      data.results.forEach(result => {
-        const row = document.querySelector(`tr[data-rowid="$${result.row_id}"]`);
-        if (!row) return;
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
 
-        const statusCell = row.querySelector('.import-status');
-        const reasonCell = row.querySelector('.status-reason');
+        if (!res.ok) {
+            throw new Error("Server responded with status: " + res.status);
+        }
 
-        if (result.status === 'success') {
-          statusCell.textContent = i18n.imported;
-          statusCell.classList.add('success-imported');
-        } else {
-          errors++;
+        const data = await res.json();
+
+        data.results.forEach(result => {
+          const row = document.querySelector('tr[data-rowid="' + result.row_id + '"]');
+          if (!row) return;
+
+          const statusCell = row.querySelector('.import-status');
+          const reasonCell = row.querySelector('.status-reason');
+          const cb = row.querySelector('.add-book');
+
+          if (result.status === 'success') {
+            statusCell.textContent = i18n.imported;
+            statusCell.classList.add('success-imported');
+            statusCell.classList.remove('error-imported');
+            reasonCell.textContent = '';
+            
+            if (cb) {
+                cb.checked = false;
+                cb.disabled = true; 
+            }
+            row.style.opacity = '0.4';
+            row.style.backgroundColor = '';
+            succeeded++;
+          } else {
+            errors++;
+            statusCell.textContent = i18n.error;
+            statusCell.classList.add('error-imported');
+            reasonCell.textContent = result.reason || i18n.unknownError;
+            
+            row.style.backgroundColor = 'var(--color-border-error)';
+            row.style.opacity = '0.15'; 
+          }
+        });
+
+      } catch (err) {
+        console.error("Chunk import failed:", err);
+        errors += chunk.length;
+        
+        chunk.forEach(book => {
+          const row = document.querySelector('tr[data-rowid="' + book.row_id + '"]');
+          if (!row) return;
+          const statusCell = row.querySelector('.import-status');
+          const reasonCell = row.querySelector('.status-reason');
+          
           statusCell.textContent = i18n.error;
           statusCell.classList.add('error-imported');
-          reasonCell.textContent = result.reason || i18n.unknownError;
+          reasonCell.textContent = i18n.errorFallback;
+          row.style.backgroundColor = 'var(--color-border-error)';
+          row.style.opacity = '0.15';
+        });
+      }
+      
+      processed += chunk.length;
+    }
+
+    document.body.style.cursor = 'default';
+    btn.style.cursor = 'pointer';
+    btn.dataset.state = 'done';
+
+    document.querySelectorAll('.add-book').forEach(cb => {
+        const row = cb.closest('tr');
+        if (!row.querySelector('.success-imported')) {
+            cb.disabled = false;
         }
-      });
+    });
 
-      const succeeded = data.results.length - errors;
-      btn.textContent = i18n.doneSummary
-        .replace('{succeeded}', succeeded)
-        .replace('{errors}', errors);
+    document.querySelectorAll('.error-imported').forEach(cell => {
+        const row = cell.closest('tr');
+        if (row) {
+            row.style.backgroundColor = 'var(--lighter-yellow)';
+            row.style.opacity = '1';
+        }
+    });
 
-    } catch (err) {
-      console.error(err);
-      btn.textContent = i18n.errorFallback;
-      btn.disabled = false;
+    const remainingTotal = document.querySelectorAll('.add-book:not(:disabled)').length;
+    const remainingChecked = document.querySelectorAll('.add-book:checked:not(:disabled)').length;
+
+    if (remainingTotal > 0) {
+        if (masterToggle) masterToggle.disabled = false;
+        btn.disabled = (remainingChecked === 0);
+    } else {
+        if (masterToggle) masterToggle.disabled = true;
+        btn.disabled = true;
+    }
+
+    btn.textContent = i18n.doneSummary
+      .replace('{succeeded}', succeeded)
+      .replace('{errors}', errors);
+
+    if (succeeded > 0) {
+        document.getElementById('go-to-log-btn').classList.remove('hidden');
     }
   });
 </script>
