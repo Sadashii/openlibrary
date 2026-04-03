@@ -865,6 +865,7 @@ class fetch_goodreads(delegate.page):
         books, books_wo_isbns = process_goodreads_csv(input_csv)
         return render['account/import'](books, books_wo_isbns)
 
+
 _DEFAULT_SHELVES = {
     'to_read': 1,
     'currently_reading': 2,
@@ -887,16 +888,28 @@ class process_imports(delegate.page):
     def POST(self):
         raw = web.data()
         if not raw:
-            return delegate.RawText(json.dumps({"error": "missing_body"}), status="400 Bad Request", content_type="application/json")
+            return delegate.RawText(
+                json.dumps({"error": "missing_body"}),
+                status="400 Bad Request",
+                content_type="application/json",
+            )
 
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
-            return delegate.RawText(json.dumps({"error": "invalid_json"}), status="400 Bad Request", content_type="application/json")
+            return delegate.RawText(
+                json.dumps({"error": "invalid_json"}),
+                status="400 Bad Request",
+                content_type="application/json",
+            )
 
         books = data.get("books")
         if not isinstance(books, list):
-            return delegate.RawText(json.dumps({"error": "books_must_be_list"}), status="400 Bad Request", content_type="application/json")
+            return delegate.RawText(
+                json.dumps({"error": "books_must_be_list"}),
+                status="400 Bad Request",
+                content_type="application/json",
+            )
 
         try:
             user = accounts.get_current_user()
@@ -929,11 +942,13 @@ class process_imports(delegate.page):
 
             for book in books:
                 if not isinstance(book, dict):
-                    results.append({
-                        "row_id": None, 
-                        "status": "error", 
-                        "reason": "Invalid book format payload. Expected a dictionary object."
-                    })
+                    results.append(
+                        {
+                            "row_id": None,
+                            "status": "error",
+                            "reason": "Invalid book format payload. Expected a dictionary object.",
+                        }
+                    )
                     continue
 
                 row_id = book.get('row_id')
@@ -1107,7 +1122,9 @@ class process_imports(delegate.page):
                     )
                 target_list._save(comment="Added books via Goodreads import")
 
-            return delegate.RawText(json.dumps({"results": results}), content_type="application/json")
+            return delegate.RawText(
+                json.dumps({"results": results}), content_type="application/json"
+            )
 
         except Exception as e:
             logger.error(f"Error in process_imports: {e}", exc_info=True)
