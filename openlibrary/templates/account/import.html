@@ -194,8 +194,10 @@ $def with (books=None, books_wo_isbns=None)
                     $ joined_shelves = ", ".join(parsed_shelves)
                     $ clean_isbn = str(books[isbn].get('ISBN', '')).replace('="', '').replace('"', '')
                     $ clean_isbn13 = str(books[isbn].get('ISBN13', '')).replace('="', '').replace('"', '')
+                    $ rating = str(books[isbn].get('My Rating', ''))
+                    $ date_read = str(books[isbn].get('Date Read', ''))
 
-                    <tr class="table-row" data-rowid="$isbn" data-isbn="$clean_isbn" data-isbn13="$clean_isbn13" data-shelves="$joined_shelves">
+                    <tr class="table-row" data-rowid="$isbn" data-isbn="$clean_isbn" data-isbn13="$clean_isbn13" data-shelves="$joined_shelves" data-rating="$rating" data-date-read="$date_read">
                       <td>
                         <input type="checkbox"
                                class="add-book"
@@ -333,17 +335,17 @@ $def with (books=None, books_wo_isbns=None)
     document.querySelectorAll('.add-book:checked').forEach(cb => {
       const row = cb.closest('tr');
       const rowid = row.dataset.rowid;
-      const isbn = row.dataset.isbn;
-      const isbn13 = row.dataset.isbn13;
-      const shelvesStr = row.dataset.shelves || "";
 
+      const shelvesStr = row.dataset.shelves || "";
       const shelvesArray = shelvesStr.split(',').map(s => s.trim()).filter(Boolean);
 
       booksToImport.push({
         row_id: rowid,
-        isbn: isbn,
-        isbn13: isbn13,
-        shelves: shelvesArray
+        isbn: row.dataset.isbn,
+        isbn13: row.dataset.isbn13,
+        shelves: shelvesArray,
+        rating: row.dataset.rating || "",
+        date_read: row.dataset.dateRead || ""
       });
     });
 

@@ -9,8 +9,9 @@ from infogami.utils.view import require_login
 from openlibrary import accounts
 from openlibrary.core import db as ol_db
 from openlibrary.core.bookshelves import Bookshelves
-from openlibrary.core.models import Edition
+from openlibrary.core.models import Edition, Ratings
 from openlibrary.utils.isbn import canonical
+from openlibrary.utils import extract_numeric_id_from_olid
 
 logger = logging.getLogger("openlibrary.dataimporter")
 
@@ -145,7 +146,8 @@ def _process_book_shelves(
             if norm_shelf not in list_keys_cache:
                 current_seeds = getattr(target_list, 'seeds', []) or []
                 list_keys_cache[norm_shelf] = {
-                    s.get('key') if isinstance(s, dict) else s for s in current_seeds
+                    s.key if hasattr(s, 'key') else (s.get('key') if isinstance(s, dict) else s)
+                    for s in current_seeds
                 }
 
             if work_key in list_keys_cache[norm_shelf]:
@@ -258,10 +260,9 @@ class process_imports(delegate.page):
                         )
                         continue
 
-                    work_id = str(work_key.split('/')[-1][2:-1])
-                    edition_id = str(edition.key.split('/')[-1][2:-1])
+                    work_id = extract_numeric_id_from_olid(work_key)
+                    edition_id = extract_numeric_id_from_olid(edition.key)
 
-                    # Delegate shelf processing to helper
                     _process_book_shelves(
                         book,
                         user,
@@ -276,6 +277,21 @@ class process_imports(delegate.page):
                         pending_seeds,
                         lists_to_save,
                     )
+
+                    raw_rating = book.get('rating') 
+                    
+                    if raw_rating not in (None, "", "0"):
+                        try:
+                            rating_val = int(raw_rating)
+                            if rating_val in range(1, 6):
+                                Ratings.add(
+                                    username=username,
+                                    work_id=work_id,
+                                    rating=rating_val,
+                                    edition_id=edition_id
+                                )
+                        except (ValueError, TypeError):
+                            logger.warning(f"Invalid rating value '{raw_rating}' for row {row_id}")
 
                     results.append({"row_id": row_id, "status": "success"})
 
@@ -292,9 +308,7 @@ class process_imports(delegate.page):
                         }
                     )
 
-            # Post-processing: Save to Database and Lists
             if db_inserts:
-                # Assuming Bookshelves.TABLENAME is accessible contextually
                 oldb.multiple_insert(Bookshelves.TABLENAME, db_inserts)
 
             for list_name in lists_to_save:
