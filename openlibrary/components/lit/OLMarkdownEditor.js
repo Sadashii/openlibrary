@@ -57,7 +57,8 @@ export class OLMarkdownEditor extends LitElement {
         showImagePopover: { state: true },
         imageUrlValue: { state: true },
         _errorMsg: { state: true },
-        showOverflowMenu: { state: true }
+        showOverflowMenu: { state: true },
+        enableHtmlBlock: { type: Boolean, attribute: 'enable-html-block' }
     };
 
     static styles = css`
@@ -522,9 +523,10 @@ export class OLMarkdownEditor extends LitElement {
         const secondaryButtons = html`
           ${this._renderButton({ title: 'Heading 1', icon: ICONS.h1, action: () => this.formatHeading(1), isActive: this._isActive('heading', { level: 1 }) })}
           ${this._renderButton({ title: 'Heading 2', icon: ICONS.h2, action: () => this.formatHeading(2), isActive: this._isActive('heading', { level: 2 }) })}
+          ${this._renderButton({ title: 'Image', icon: ICONS.image, action: () => { this.showOverflowMenu = false; this.toggleImagePopover(); }, isActive: this.showImagePopover })}
           ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
           ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
-          ${this._renderButton({ title: 'HTML Block', icon: ICONS.code, action: this.insertHtmlBlock.bind(this) })}
+          ${this.enableHtmlBlock ? this._renderButton({ title: 'HTML Block', icon: ICONS.code, action: this.insertHtmlBlock.bind(this) }) : ''}
         `;
 
         return html`
@@ -551,7 +553,9 @@ export class OLMarkdownEditor extends LitElement {
             ` : ''}
           </div>
           <div class="link-popover-wrapper">
-            ${this._renderButton({ title: 'Image', icon: ICONS.image, action: this.toggleImagePopover.bind(this), isActive: this.showImagePopover })}
+            <span class="overflow-secondary">
+              ${this._renderButton({ title: 'Image', icon: ICONS.image, action: this.toggleImagePopover.bind(this), isActive: this.showImagePopover })}
+            </span>
             ${this.showImagePopover ? html`
               <div class="link-popover" @mousedown="${(e) => e.stopPropagation()}">
                 <input type="url" class="link-input image-input" placeholder="https://..." .value="${this.imageUrlValue}" @input="${this.handleImageInput}" @keydown="${this.handleImageKeydown}" />
@@ -566,7 +570,7 @@ export class OLMarkdownEditor extends LitElement {
           <span class="overflow-secondary">
             ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
             ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
-            ${this._renderButton({ title: 'HTML Block', icon: ICONS.code, action: this.insertHtmlBlock.bind(this) })}
+            ${this.enableHtmlBlock ? this._renderButton({ title: 'HTML Block', icon: ICONS.code, action: this.insertHtmlBlock.bind(this) }) : ''}
           </span>
           <div class="overflow-menu-wrapper overflow-toggle">
             ${this._renderButton({ title: 'More', icon: ICONS.more, action: () => { this.showOverflowMenu = !this.showOverflowMenu; if (this.showOverflowMenu) this.showLinkPopover = false; }, isActive: this.showOverflowMenu })}
