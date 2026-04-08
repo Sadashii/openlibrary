@@ -57,7 +57,7 @@ export const HtmlBlock = Node.create({
 
             function autoSize() {
                 source.style.height = 'auto';
-                source.style.height = Math.max(40, source.scrollHeight) + 'px';
+                source.style.height = `${Math.max(40, source.scrollHeight)}px`;
             }
 
             // Commit changes to the node on blur

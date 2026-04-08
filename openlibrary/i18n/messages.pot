@@ -2069,6 +2069,17 @@ msgid ""
 msgstr ""
 
 #: design.html
+msgid "Mixed Markdown and HTML"
+msgstr ""
+
+#: design.html
+msgid ""
+"The editor preserves raw HTML blocks found in Markdown content. HTML "
+"blocks appear with a preview and an Edit button to modify the source. Use"
+" the toolbar's HTML button to insert new blocks."
+msgstr ""
+
+#: design.html
 msgid "Custom placeholder"
 msgstr ""
 
