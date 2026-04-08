@@ -41,6 +41,8 @@ const ICONS = {
     hr: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
     ul: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
     ol: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>`,
+    image: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
+    code: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
     more: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`
 };
 
@@ -52,6 +54,8 @@ export class OLMarkdownEditor extends LitElement {
         editor: { state: true },
         showLinkPopover: { state: true },
         linkInputValue: { state: true },
+        showImagePopover: { state: true },
+        imageUrlValue: { state: true },
         _errorMsg: { state: true },
         showOverflowMenu: { state: true }
     };
@@ -128,6 +132,48 @@ export class OLMarkdownEditor extends LitElement {
 
     .editor-input .tiptap a {
       color: var(--link-blue);
+    }
+
+    .editor-input .tiptap img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--border-radius-card);
+    }
+
+    .editor-input .tiptap img.ProseMirror-selectednode {
+      outline: 2px solid var(--link-blue);
+    }
+
+    .html-block {
+      border: 1px dashed var(--light-grey);
+      border-radius: var(--border-radius-card);
+      margin: 0.55em 0;
+      overflow: hidden;
+    }
+
+    .html-block__label {
+      display: block;
+      padding: 4px 8px;
+      background: var(--grey-f4f4f4);
+      border-bottom: 1px dashed var(--light-grey);
+      font-size: 0.7rem;
+      font-family: monospace;
+      font-weight: 600;
+      color: var(--darker-grey);
+    }
+
+    .html-block__source {
+      display: block;
+      width: 100%;
+      border: none;
+      padding: 8px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      resize: vertical;
+      min-height: 40px;
+      box-sizing: border-box;
+      outline: none;
+      background: var(--off-white);
     }
 
     .editor-input .tiptap blockquote {
@@ -268,6 +314,8 @@ export class OLMarkdownEditor extends LitElement {
         this.targetElement = null;
         this.showLinkPopover = false;
         this.linkInputValue = '';
+        this.showImagePopover = false;
+        this.imageUrlValue = '';
         this._errorMsg = null;
         this.showOverflowMenu = false;
         this._handleDocumentClick = this._handleDocumentClick.bind(this);
@@ -293,9 +341,10 @@ export class OLMarkdownEditor extends LitElement {
     }
 
     _handleDocumentClick(e) {
-        if (!this.showLinkPopover && !this.showOverflowMenu) return;
+        if (!this.showLinkPopover && !this.showImagePopover && !this.showOverflowMenu) return;
         if (!e.composedPath().includes(this)) {
             this.showLinkPopover = false;
+            this.showImagePopover = false;
             this.showOverflowMenu = false;
         }
     }
@@ -369,14 +418,16 @@ export class OLMarkdownEditor extends LitElement {
         if (!e.target.closest('.toolbar-btn')) e.preventDefault();
     }
 
-    _focusEditor() {
+    _focusEditor(e) {
         if (!this.editor) return;
+        if (e && e.target.closest('.html-block')) return;
         if (!this.editor.isFocused) this.editor.commands.focus();
     }
 
     formatHeading(level) { if (!this.editor) return; this.editor.chain().focus().toggleHeading({ level }).run(); }
     formatText(type) { if (!this.editor) return; this.editor.chain().focus()[`toggle${type.charAt(0).toUpperCase() + type.slice(1)}`]().run(); }
     insertRule() { if (!this.editor) return; this.editor.chain().focus().setHorizontalRule().run(); }
+    insertHtmlBlock() { if (!this.editor) return; this.editor.commands.insertHtmlBlock(''); }
     formatQuote() { if (!this.editor) return; this.editor.chain().focus().toggleBlockquote().run(); }
     formatList(type) { if (!this.editor) return; this.editor.chain().focus()[type === 'bullet' ? 'toggleBulletList' : 'toggleOrderedList']().run(); }
 
@@ -408,6 +459,31 @@ export class OLMarkdownEditor extends LitElement {
         if (!this.editor) return;
         this.editor.chain().focus().extendMarkRange('link').unsetLink().run();
         this.showLinkPopover = false;
+    }
+
+    // Image popover
+    toggleImagePopover() {
+        if (!this.editor) return;
+        this.showImagePopover = !this.showImagePopover;
+        if (this.showImagePopover) {
+            this.showLinkPopover = false;
+            this.showOverflowMenu = false;
+            this.imageUrlValue = '';
+            setTimeout(() => this.shadowRoot.querySelector('.image-input')?.focus(), 0);
+        }
+    }
+
+    handleImageInput(e) { this.imageUrlValue = e.target.value; }
+
+    handleImageKeydown(e) {
+        if (e.key === 'Enter') { e.preventDefault(); this.applyImage(); }
+        if (e.key === 'Escape') { this.showImagePopover = false; this._focusEditor(); }
+    }
+
+    applyImage() {
+        if (!this.editor || !this.imageUrlValue) return;
+        this.editor.chain().focus().setImage({ src: this.imageUrlValue }).run();
+        this.showImagePopover = false;
     }
 
     _isActive(type, options = {}) {
@@ -448,6 +524,7 @@ export class OLMarkdownEditor extends LitElement {
           ${this._renderButton({ title: 'Heading 2', icon: ICONS.h2, action: () => this.formatHeading(2), isActive: this._isActive('heading', { level: 2 }) })}
           ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
           ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
+          ${this._renderButton({ title: 'HTML Block', icon: ICONS.code, action: this.insertHtmlBlock.bind(this) })}
         `;
 
         return html`
@@ -473,6 +550,15 @@ export class OLMarkdownEditor extends LitElement {
               </div>
             ` : ''}
           </div>
+          <div class="link-popover-wrapper">
+            ${this._renderButton({ title: 'Image', icon: ICONS.image, action: this.toggleImagePopover.bind(this), isActive: this.showImagePopover })}
+            ${this.showImagePopover ? html`
+              <div class="link-popover" @mousedown="${(e) => e.stopPropagation()}">
+                <input type="url" class="link-input image-input" placeholder="https://..." .value="${this.imageUrlValue}" @input="${this.handleImageInput}" @keydown="${this.handleImageKeydown}" />
+                ${this._renderButton({ title: 'Insert Image', icon: ICONS.save, action: this.applyImage.bind(this) })}
+              </div>
+            ` : ''}
+          </div>
           <div class="toolbar-divider"></div>
           ${this._renderButton({ title: 'Bullet List', icon: ICONS.ul, action: () => this.formatList('bullet'), isActive: this._isActive('bulletList') })}
           ${this._renderButton({ title: 'Numbered List', icon: ICONS.ol, action: () => this.formatList('number'), isActive: this._isActive('orderedList') })}
@@ -480,6 +566,7 @@ export class OLMarkdownEditor extends LitElement {
           <span class="overflow-secondary">
             ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
             ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
+            ${this._renderButton({ title: 'HTML Block', icon: ICONS.code, action: this.insertHtmlBlock.bind(this) })}
           </span>
           <div class="overflow-menu-wrapper overflow-toggle">
             ${this._renderButton({ title: 'More', icon: ICONS.more, action: () => { this.showOverflowMenu = !this.showOverflowMenu; if (this.showOverflowMenu) this.showLinkPopover = false; }, isActive: this.showOverflowMenu })}

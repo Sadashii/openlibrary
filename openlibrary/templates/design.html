@@ -316,6 +316,31 @@ This is a second paragraph with a [link](https://openlibrary.org).</textarea>
         </section>
 
         <section class="example">
+          <h3 class="example__title">$_("Mixed Markdown and HTML")</h3>
+          <p>$_("The editor preserves raw HTML blocks found in Markdown content. HTML blocks appear with a preview and an Edit button to modify the source. Use the toolbar's HTML button to insert new blocks.")</p>
+          <div class="example__output">
+            <textarea id="demo-editor-html" style="display:none;">## Welcome
+
+Open Library is a non-profit, open source, digital public library.
+
+<a class="cta-btn cta-btn--available" href="https://docs.google.com/forms/d/e/example/viewform">Contribute as a <strong>Volunteer</strong></a>
+
+There are several ways to participate:
+
+* Fix data errors in the catalog
+* Translate the website
+* Contribute code on GitHub
+
+<img width="800" alt="Books on a shelf" src="https://openlibrary.org/static/images/openlibrary-logo-tighter.svg">
+
+<hr>
+
+Want to create your own collection? Check out [these instructions](/help/faq/collections).</textarea>
+            <ol-markdown-editor target-id="demo-editor-html"></ol-markdown-editor>
+          </div>
+        </section>
+
+        <section class="example">
           <h3 class="example__title">$_("Custom placeholder")</h3>
           <p>$:_("Use %(placeholder)s to set the text shown when the editor is empty.", placeholder="<code>placeholder</code>")</p>
           <pre class="example__code"><code class="language-html">&lt;textarea id="my-input"&gt;&lt;/textarea&gt;
