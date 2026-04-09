@@ -24,7 +24,7 @@ export function createEditor({ element, content, placeholder, onUpdate, onTransa
         element,
         extensions: [
             StarterKit.configure({
-                heading: { levels: [1, 2] },
+                heading: { levels: [1, 2, 3, 4] },
                 codeBlock: false,
                 code: false,
                 link: { openOnClick: false, autolink: true },
