@@ -22,9 +22,7 @@ _DEFAULT_SHELVES = {
     'read': 3,
 }
 
-_IGNORED_SHELVES = {
-    'did_not_finish'
-}
+_IGNORED_SHELVES = {'did_not_finish'}
 
 
 def _normalize_shelf_name(name: str) -> str:

@@ -2883,6 +2883,17 @@ msgid "Books Ready to Import"
 msgstr ""
 
 #: account/import.html
+msgid "Note:"
+msgstr ""
+
+#: account/import.html
+msgid ""
+"Books from your 'Did Not Finish' shelf will be skipped during import as "
+"we do not currently support it. We plan to add support for this in the "
+"future."
+msgstr ""
+
+#: account/import.html
 msgid "Select all books ready to import"
 msgstr ""
 
@@ -2896,10 +2907,6 @@ msgstr ""
 
 #: account/import.html
 msgid "Books Missing ISBNs"
-msgstr ""
-
-#: account/import.html
-msgid "Note:"
 msgstr ""
 
 #: account/import.html
