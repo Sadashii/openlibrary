@@ -22,6 +22,10 @@ _DEFAULT_SHELVES = {
     'read': 3,
 }
 
+_IGNORED_SHELVES = {
+    'did_not_finish'
+}
+
 
 def _normalize_shelf_name(name: str) -> str:
     """Standardizes shelf names for consistent lookup and creation."""
@@ -85,6 +89,10 @@ def _process_this_books_shelves(
     shelves = {_normalize_shelf_name(s) for s in book.get('shelves', [])}
 
     for norm_shelf in shelves:
+        # Ignore the did_not_finish shelf
+        if norm_shelf in _IGNORED_SHELVES:
+            continue
+
         # 1. Handle creation of completely new custom lists
         if norm_shelf not in _DEFAULT_SHELVES and norm_shelf not in ctx['lists_map']:
             new_list = user.new_list(
