@@ -2875,6 +2875,10 @@ msgid "Import Books"
 msgstr ""
 
 #: account/import.html
+msgid "Go to My Books"
+msgstr ""
+
+#: account/import.html
 msgid "Books Ready to Import"
 msgstr ""
 
@@ -2902,6 +2906,14 @@ msgstr ""
 msgid ""
 "Unfortunately, these books do not have ISBN codes and currently we can't "
 "import these."
+msgstr ""
+
+#: account/import.html
+msgid "Action"
+msgstr ""
+
+#: account/import.html
+msgid "Search OL"
 msgstr ""
 
 #: account/import.html

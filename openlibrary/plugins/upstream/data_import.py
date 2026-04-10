@@ -64,7 +64,8 @@ def _prepare_context(user, username, oldb):
 
     return {
         "books_in_bookshelves": {  # To check if book already in bookshelf
-            (str(e.work_id), int(e.bookshelf_id)) for e in books_already_in_default_bookshelves
+            (str(e.work_id), int(e.bookshelf_id))
+            for e in books_already_in_default_bookshelves
         },
         "lists_map": {  # list-name: list object
             _normalize_shelf_name(lst.name): lst
@@ -108,12 +109,14 @@ def _process_this_books_shelves(
             shelf_id = _DEFAULT_SHELVES[norm_shelf]
 
             if (work_id, shelf_id) not in ctx['books_in_bookshelves']:
-                ctx['pending_bookshelf_inserts'].append({
-                    'username': username,
-                    'bookshelf_id': shelf_id,
-                    'work_id': work_id,
-                    'edition_id': edition_id,
-                })
+                ctx['pending_bookshelf_inserts'].append(
+                    {
+                        'username': username,
+                        'bookshelf_id': shelf_id,
+                        'work_id': work_id,
+                        'edition_id': edition_id,
+                    }
+                )
                 ctx['books_in_bookshelves'].add((work_id, shelf_id))
 
         # 3. Handle adding books to custom lists

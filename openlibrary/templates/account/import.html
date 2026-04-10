@@ -164,9 +164,9 @@ $def with (books=None, books_wo_isbns=None)
                       onclick="window.location.reload();">
                 $_("Cancel")
               </button>
-              
-              <a href="/account/books" 
-                 id="go-to-log-btn" 
+
+              <a href="/account/books"
+                 id="go-to-log-btn"
                  class="hidden cta-btn cta-btn--available cta-btn--small"
                  data-ol-link-track="PatronImports|ViewLog">
                 $_("Go to My Books")
@@ -211,12 +211,12 @@ $def with (books=None, books_wo_isbns=None)
                     $ rating = str(books[isbn].get('My Rating', ''))
                     $ date_read = str(books[isbn].get('Date Read', ''))
 
-                    <tr class="table-row" 
-                        data-rowid="$isbn" 
-                        data-isbn="$clean_isbn" 
-                        data-isbn13="$clean_isbn13" 
-                        data-shelves="$joined_shelves" 
-                        data-rating="$rating" 
+                    <tr class="table-row"
+                        data-rowid="$isbn"
+                        data-isbn="$clean_isbn"
+                        data-isbn13="$clean_isbn13"
+                        data-shelves="$joined_shelves"
+                        data-rating="$rating"
                         data-date-read="$date_read">
                       <td>
                         <input type="checkbox"
@@ -319,7 +319,7 @@ $def with (books=None, books_wo_isbns=None)
     const checkboxes = document.querySelectorAll('.add-book:not(:disabled)');
     const count = Array.from(checkboxes).filter(cb => cb.checked).length;
     const btn = document.querySelector('.import-submit');
-    
+
     if (btn && btn.dataset.state !== 'importing' && btn.dataset.state !== 'done') {
       if (count === 1) {
         btn.textContent = i18n.importSingle;
@@ -332,7 +332,7 @@ $def with (books=None, books_wo_isbns=None)
 
   document.addEventListener('change', function (e) {
     const btn = document.querySelector('.import-submit');
-    
+
     if (btn && btn.dataset.state === 'done') {
         btn.dataset.state = 'ready';
     }
@@ -365,7 +365,7 @@ $def with (books=None, books_wo_isbns=None)
     btn.disabled = true;
     if (masterToggle) masterToggle.disabled = true;
     document.querySelectorAll('.add-book').forEach(cb => cb.disabled = true);
-    
+
     document.body.style.cursor = 'wait';
     btn.style.cursor = 'wait';
     btn.textContent = i18n.importing;
@@ -439,10 +439,10 @@ $def with (books=None, books_wo_isbns=None)
             statusCell.classList.add('success-imported');
             statusCell.classList.remove('error-imported');
             reasonCell.textContent = '';
-            
+
             if (cb) {
                 cb.checked = false;
-                cb.disabled = true; 
+                cb.disabled = true;
             }
             row.style.opacity = '0.4';
             row.style.backgroundColor = '';
@@ -452,22 +452,22 @@ $def with (books=None, books_wo_isbns=None)
             statusCell.textContent = i18n.error;
             statusCell.classList.add('error-imported');
             reasonCell.textContent = result.reason || i18n.unknownError;
-            
+
             row.style.backgroundColor = 'var(--color-border-error)';
-            row.style.opacity = '0.15'; 
+            row.style.opacity = '0.15';
           }
         });
 
       } catch (err) {
         console.error("Chunk import failed:", err);
         errors += chunk.length;
-        
+
         chunk.forEach(book => {
           const row = document.querySelector('tr[data-rowid="' + book.row_id + '"]');
           if (!row) return;
           const statusCell = row.querySelector('.import-status');
           const reasonCell = row.querySelector('.status-reason');
-          
+
           statusCell.textContent = i18n.error;
           statusCell.classList.add('error-imported');
           reasonCell.textContent = i18n.errorFallback;
@@ -475,7 +475,7 @@ $def with (books=None, books_wo_isbns=None)
           row.style.opacity = '0.15';
         });
       }
-      
+
       processed += chunk.length;
     }
 
