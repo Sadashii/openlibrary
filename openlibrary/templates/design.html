@@ -352,13 +352,18 @@ Want to create your own collection? Check out [these instructions](/help/faq/col
   enable-code&gt;
 &lt;/ol-markdown-editor&gt;</code></pre>
           <div class="example__output">
-            <textarea id="demo-editor-code" style="display:none;">## Will it work
+            <textarea id="demo-editor-code" style="display:none;">## Fetching a work
+
+Open Library exposes a JSON API for every record. Append `.json` to a work key to get the raw data:
 
 ```
-block code here
+import requests
+
+work = requests.get("https://openlibrary.org/works/OL45804W.json").json()
+print(work["title"])
 ```
 
-Then some `inline code` here.</textarea>
+The response includes `title`, `authors`, and a `description` field formatted as Markdown.</textarea>
             <ol-markdown-editor target-id="demo-editor-code" enable-code></ol-markdown-editor>
           </div>
         </section>
