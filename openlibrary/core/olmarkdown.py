@@ -24,6 +24,45 @@ AUTOLINK_RE = r'''(^|\s)(https?\:\/\/[^"\s<>]*[^.,;'">\:\s\<\>\)\]\!]|[a-z0-9_\-
 LINK_REFERENCE_RE = re.compile(r' *\[[^\[\] ]*\] *:')
 
 
+class FencedCodePreprocessor(markdown.Preprocessor):
+    """Convert GitHub-style fenced code blocks into 4-space indented blocks.
+
+    Python-Markdown 1.6b (the upstream vendored at vendor/infogami) predates
+    fenced code blocks, so ```...``` would otherwise render as literal backticks
+    with <br /> between the lines. Rewriting to the indented form lets the
+    base renderer emit <pre><code>, and keeps the content out of reach of the
+    line-break, autolink, header, and HTML-block preprocessors (all of which
+    skip indented lines).
+    """
+
+    FENCE_RE = re.compile(r'^`{3,}[^`]*$')
+
+    def run(self, lines):
+        result = []
+        i = 0
+        n = len(lines)
+        while i < n:
+            if self.FENCE_RE.match(lines[i]):
+                j = i + 1
+                while j < n and not self.FENCE_RE.match(lines[j]):
+                    j += 1
+                if j < n:
+                    if result and result[-1].strip():
+                        result.append('')
+                    for inner in lines[i + 1 : j]:
+                        result.append('    ' + inner)
+                    if j + 1 < n and lines[j + 1].strip():
+                        result.append('')
+                    i = j + 1
+                    continue
+            result.append(lines[i])
+            i += 1
+        return result
+
+
+FENCED_CODE_PREPROCESSOR = FencedCodePreprocessor()
+
+
 class LineBreaksPreprocessor(markdown.Preprocessor):
     def run(self, lines):
         for i in range(len(lines) - 1):
@@ -77,6 +116,7 @@ class OLMarkdown(markdown.Markdown):
         )
         patterns[patterns.index(markdown.AUTOLINK_PATTERN)] = autolink
         p = self.preprocessors
+        p.insert(0, FENCED_CODE_PREPROCESSOR)
         p[p.index(markdown.LINE_BREAKS_PREPROCESSOR)] = LINE_BREAKS_PREPROCESSOR
         p.append(AUTOLINK_PREPROCESSOR)
 

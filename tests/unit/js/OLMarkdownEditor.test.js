@@ -18,7 +18,7 @@ import { HtmlBlock } from '../../../openlibrary/components/lit/html-block.js';
 /*  Helper: create an editor identical to production, roundtrip text   */
 /* ------------------------------------------------------------------ */
 
-function createTestEditor(markdownContent) {
+function createTestEditor(markdownContent, { enableCode = false } = {}) {
     const el = document.createElement('div');
     document.body.appendChild(el);
 
@@ -27,8 +27,8 @@ function createTestEditor(markdownContent) {
         extensions: [
             StarterKit.configure({
                 heading: { levels: [1, 2, 3, 4] },
-                codeBlock: false,
-                code: false,
+                codeBlock: enableCode ? undefined : false,
+                code: enableCode ? undefined : false,
                 link: { openOnClick: false, autolink: true },
                 strike: false
             }),
@@ -66,8 +66,8 @@ function postProcessMarkdown(md) {
 /**
  * Full round-trip: markdown → editor → markdown (with post-processing).
  */
-function roundTrip(input) {
-    const { editor, el } = createTestEditor(input);
+function roundTrip(input, options) {
+    const { editor, el } = createTestEditor(input, options);
     const raw = editor.storage.markdown.getMarkdown();
     const output = postProcessMarkdown(raw);
     editor.destroy();
@@ -868,5 +868,122 @@ Does OpenLibrary.org look like it's from the the 90's? Help us fix that!`;
         // Should be idempotent
         const second = normalize(roundTrip(output));
         expect(second).toBe(output);
+    });
+});
+
+/* ================================================================== */
+/*  Code support (enableCode / enable-code attribute)                  */
+/* ================================================================== */
+
+describe('OLMarkdownEditor code support', () => {
+
+    /* ---------- default: code disabled ---------- */
+
+    test('without enableCode, fenced code block is flattened to paragraphs', () => {
+        const input = '```\nblock code here\n```';
+        const output = normalize(roundTrip(input));
+        // When code support is off, fences should not survive
+        expect(output).not.toContain('```');
+    });
+
+    test('without enableCode, backtick inline code is flattened', () => {
+        const input = 'Some `inline code` here.';
+        const output = normalize(roundTrip(input));
+        expect(output).not.toContain('`inline code`');
+    });
+
+    /* ---------- enableCode: inline code ---------- */
+
+    test('inline code survives round-trip when enableCode is true', () => {
+        const input = 'Then some `inline code` here.';
+        const output = normalize(roundTrip(input, { enableCode: true }));
+        expect(output).toContain('`inline code`');
+        const second = normalize(roundTrip(output, { enableCode: true }));
+        expect(second).toBe(output);
+    });
+
+    test('inline code with special characters survives', () => {
+        const input = 'Use `foo.bar(x, y)` to call it.';
+        const output = normalize(roundTrip(input, { enableCode: true }));
+        expect(output).toContain('`foo.bar(x, y)`');
+    });
+
+    /* ---------- enableCode: fenced code block ---------- */
+
+    test('fenced code block survives round-trip when enableCode is true', () => {
+        const input = '```\nblock code here\n```';
+        const output = normalize(roundTrip(input, { enableCode: true }));
+        // Must keep triple backticks and the contents on their own line
+        expect(output).toMatch(/```\s*\n?block code here\n?```/);
+        // Must NOT contain <br /> injected into the code block
+        expect(output).not.toContain('<br');
+        // Must NOT collapse to a single-line `...` form
+        expect(output).not.toMatch(/^`[^`\n]*block code here[^`\n]*`$/m);
+        // Idempotent
+        const second = normalize(roundTrip(output, { enableCode: true }));
+        expect(second).toBe(output);
+    });
+
+    test('fenced code block with language tag survives', () => {
+        const input = '```js\nconst x = 1;\nconsole.log(x);\n```';
+        const output = normalize(roundTrip(input, { enableCode: true }));
+        expect(output).toContain('```');
+        expect(output).toContain('const x = 1;');
+        expect(output).toContain('console.log(x);');
+        expect(output).not.toContain('<br');
+    });
+
+    test('multi-line code block preserves newlines (not <br />)', () => {
+        const input = '```\nline one\nline two\nline three\n```';
+        const output = normalize(roundTrip(input, { enableCode: true }));
+        // All three lines must be on their own lines
+        expect(output).toMatch(/line one\nline two\nline three/);
+        expect(output).not.toContain('<br');
+    });
+
+    /* ---------- combined: user's reproduction case ---------- */
+
+    test('heading + code block + inline code + html block (user repro)', () => {
+        const input = [
+            '## Will it work',
+            '',
+            '```',
+            'block code here',
+            '```',
+            '',
+            'Then some `inline code` here.',
+            '',
+            '<div>and finally an html block here</div>'
+        ].join('\n');
+        const output = normalize(roundTrip(input, { enableCode: true }));
+
+        expect(output).toContain('## Will it work');
+        expect(output).toMatch(/```\s*\n?block code here\n?```/);
+        expect(output).toContain('`inline code`');
+        expect(output).toContain('<div>and finally an html block here</div>');
+        // The bug-shape from the screenshot: single backticks with <br /> inside.
+        expect(output).not.toContain('<br');
+        expect(output).not.toMatch(/`[^`\n]*<br[^`]*`/);
+
+        const second = normalize(roundTrip(output, { enableCode: true }));
+        expect(second).toBe(output);
+    });
+
+    /* ---------- edge cases ---------- */
+
+    test('code block containing markdown-like characters is preserved verbatim', () => {
+        const input = '```\n**not bold** and *not italic*\n# not a heading\n```';
+        const output = normalize(roundTrip(input, { enableCode: true }));
+        expect(output).toContain('**not bold**');
+        expect(output).toContain('*not italic*');
+        expect(output).toContain('# not a heading');
+    });
+
+    test('inline code next to bold/italic does not bleed', () => {
+        const input = '**bold** and `code` and *italic*.';
+        const output = normalize(roundTrip(input, { enableCode: true }));
+        expect(output).toContain('**bold**');
+        expect(output).toContain('`code`');
+        expect(output).toContain('*italic*');
     });
 });

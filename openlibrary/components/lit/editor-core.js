@@ -17,16 +17,17 @@ import { HtmlBlock } from './html-block.js';
  * @param {string} options.placeholder - Placeholder text when editor is empty
  * @param {Function} options.onUpdate - Called on every content change
  * @param {Function} options.onTransaction - Called on every transaction (for re-renders)
+ * @param {boolean} [options.enableCode] - Enable inline code and fenced code blocks
  * @returns {Editor}
  */
-export function createEditor({ element, content, placeholder, onUpdate, onTransaction }) {
+export function createEditor({ element, content, placeholder, onUpdate, onTransaction, enableCode = false }) {
     return new Editor({
         element,
         extensions: [
             StarterKit.configure({
                 heading: { levels: [1, 2, 3, 4] },
-                codeBlock: false,
-                code: false,
+                codeBlock: enableCode ? undefined : false,
+                code: enableCode ? undefined : false,
                 link: { openOnClick: false, autolink: true },
                 strike: false
             }),

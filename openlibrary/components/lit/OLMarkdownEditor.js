@@ -43,6 +43,8 @@ const ICONS = {
     ol: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>`,
     image: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
     code: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+    codeInline: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/><path d="M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/></svg>`,
+    codeBlock: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><polyline points="10 10 8 12 10 14"/><polyline points="14 10 16 12 14 14"/></svg>`,
     more: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`
 };
 
@@ -58,7 +60,8 @@ export class OLMarkdownEditor extends LitElement {
         imageUrlValue: { state: true },
         _errorMsg: { state: true },
         showOverflowMenu: { state: true },
-        enableHtmlBlock: { type: Boolean, attribute: 'enable-html-block' }
+        enableHtmlBlock: { type: Boolean, attribute: 'enable-html-block' },
+        enableCode: { type: Boolean, attribute: 'enable-code' }
     };
 
     static styles = css`
@@ -189,6 +192,33 @@ export class OLMarkdownEditor extends LitElement {
 
     .editor-input .tiptap blockquote p {
       margin: 0;
+    }
+
+    .editor-input .tiptap code {
+      background: var(--grey-f4f4f4);
+      border: 1px solid var(--lighter-grey);
+      border-radius: var(--border-radius-input);
+      padding: 0.1em 0.3em;
+      font-family: monospace;
+      font-size: 0.85em;
+    }
+
+    .editor-input .tiptap pre {
+      background: var(--grey-f4f4f4);
+      border: 1px solid var(--lighter-grey);
+      border-radius: var(--border-radius-card);
+      padding: var(--spacing-inset-sm);
+      margin: 0 0 0.55em;
+      overflow-x: auto;
+      font-family: monospace;
+      font-size: 0.85em;
+    }
+
+    .editor-input .tiptap pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: inherit;
     }
 
     .tiptap p.is-editor-empty:first-child::before {
@@ -372,6 +402,7 @@ export class OLMarkdownEditor extends LitElement {
             element: editorRoot,
             content: initialContent,
             placeholder: this.placeholder || 'Write something...',
+            enableCode: this.enableCode,
             onUpdate: ({ editor }) => {
                 let markdownOutput = editor.storage.markdown.getMarkdown();
 
@@ -430,6 +461,8 @@ export class OLMarkdownEditor extends LitElement {
     insertRule() { if (!this.editor) return; this.editor.chain().focus().setHorizontalRule().run(); }
     insertHtmlBlock() { if (!this.editor) return; this.editor.commands.insertHtmlBlock(''); }
     formatQuote() { if (!this.editor) return; this.editor.chain().focus().toggleBlockquote().run(); }
+    formatInlineCode() { if (!this.editor) return; this.editor.chain().focus().toggleCode().run(); }
+    formatCodeBlock() { if (!this.editor) return; this.editor.chain().focus().toggleCodeBlock().run(); }
     formatList(type) { if (!this.editor) return; this.editor.chain().focus()[type === 'bullet' ? 'toggleBulletList' : 'toggleOrderedList']().run(); }
 
     toggleLinkPopover() {
@@ -526,6 +559,8 @@ export class OLMarkdownEditor extends LitElement {
           ${this._renderButton({ title: 'Image', icon: ICONS.image, action: () => { this.showOverflowMenu = false; this.toggleImagePopover(); }, isActive: this.showImagePopover })}
           ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
           ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
+          ${this.enableCode ? this._renderButton({ title: 'Inline Code', icon: ICONS.codeInline, action: this.formatInlineCode.bind(this), isActive: this._isActive('code') }) : ''}
+          ${this.enableCode ? this._renderButton({ title: 'Code Block', icon: ICONS.codeBlock, action: this.formatCodeBlock.bind(this), isActive: this._isActive('codeBlock') }) : ''}
           ${this.enableHtmlBlock ? this._renderButton({ title: 'HTML Block', icon: ICONS.code, action: this.insertHtmlBlock.bind(this) }) : ''}
         `;
 
@@ -570,6 +605,8 @@ export class OLMarkdownEditor extends LitElement {
           <span class="overflow-secondary">
             ${this._renderButton({ title: 'Blockquote', icon: ICONS.quote, action: this.formatQuote.bind(this), isActive: this._isActive('blockquote') })}
             ${this._renderButton({ title: 'Divider', icon: ICONS.hr, action: this.insertRule.bind(this) })}
+            ${this.enableCode ? this._renderButton({ title: 'Inline Code', icon: ICONS.codeInline, action: this.formatInlineCode.bind(this), isActive: this._isActive('code') }) : ''}
+            ${this.enableCode ? this._renderButton({ title: 'Code Block', icon: ICONS.codeBlock, action: this.formatCodeBlock.bind(this), isActive: this._isActive('codeBlock') }) : ''}
             ${this.enableHtmlBlock ? this._renderButton({ title: 'HTML Block', icon: ICONS.code, action: this.insertHtmlBlock.bind(this) }) : ''}
           </span>
           <div class="overflow-menu-wrapper overflow-toggle">
