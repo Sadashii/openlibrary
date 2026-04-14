@@ -2603,6 +2603,26 @@ msgstr ""
 msgid "Logged %(count)i times %(time_unit)s"
 msgstr ""
 
+#: verify_human.html
+msgid "Human Verification"
+msgstr ""
+
+#: verify_human.html
+msgid "Please verify you are human to continue."
+msgstr ""
+
+#: verify_human.html
+msgid "Verify you are human"
+msgstr ""
+
+#: verify_human.html
+msgid "Verification failed. Please try again."
+msgstr ""
+
+#: verify_human.html
+msgid "Verifying..."
+msgstr ""
+
 #: viewpage.html
 msgid "Revert to this revision?"
 msgstr ""
@@ -6099,6 +6119,10 @@ msgstr ""
 
 #: home/index.html
 msgid "Authors Alliance & MIT Press"
+msgstr ""
+
+#: home/index.html
+msgid "Books in Local Environment"
 msgstr ""
 
 #: home/loans.html
