@@ -317,7 +317,11 @@ This is a second paragraph with a [link](https://openlibrary.org).</textarea>
 
         <section class="example">
           <h3 class="example__title">$_("Mixed Markdown and HTML")</h3>
-          <p>$_("The editor preserves raw HTML blocks found in Markdown content. HTML blocks appear with a preview and an Edit button to modify the source. Use the toolbar's HTML button to insert new blocks.")</p>
+          <p>$:_("Add the %(attr)s attribute to expose the HTML block button in the toolbar. HTML blocks appear with a preview and an Edit button to modify the source.", attr="<code>enable-html-block</code>")</p>
+          <pre class="example__code"><code class="language-html">&lt;ol-markdown-editor
+  target-id="my-input"
+  enable-html-block&gt;
+&lt;/ol-markdown-editor&gt;</code></pre>
           <div class="example__output">
             <textarea id="demo-editor-html" style="display:none;">## Welcome
 
@@ -336,22 +340,26 @@ There are several ways to participate:
 <hr>
 
 Want to create your own collection? Check out [these instructions](/help/faq/collections).</textarea>
-            <ol-markdown-editor target-id="demo-editor-html"></ol-markdown-editor>
+            <ol-markdown-editor target-id="demo-editor-html" enable-html-block></ol-markdown-editor>
           </div>
         </section>
 
         <section class="example">
-          <h3 class="example__title">$_("Custom placeholder")</h3>
-          <p>$:_("Use %(placeholder)s to set the text shown when the editor is empty.", placeholder="<code>placeholder</code>")</p>
-          <pre class="example__code"><code class="language-html">&lt;textarea id="my-input"&gt;&lt;/textarea&gt;
-&lt;ol-markdown-editor
+          <h3 class="example__title">$_("Code blocks and inline code")</h3>
+          <p>$:_("Add the %(attr)s attribute to expose the inline code and code block buttons in the toolbar. Code support is off by default because only the wiki page renderer is guaranteed to render fenced code blocks.", attr="<code>enable-code</code>")</p>
+          <pre class="example__code"><code class="language-html">&lt;ol-markdown-editor
   target-id="my-input"
-  placeholder="Describe this book..."
-  height="100px"&gt;
+  enable-code&gt;
 &lt;/ol-markdown-editor&gt;</code></pre>
           <div class="example__output">
-            <textarea id="demo-editor-placeholder" style="display:none;"></textarea>
-            <ol-markdown-editor target-id="demo-editor-placeholder" placeholder="Describe this book..." height="100px"></ol-markdown-editor>
+            <textarea id="demo-editor-code" style="display:none;">## Will it work
+
+```
+block code here
+```
+
+Then some `inline code` here.</textarea>
+            <ol-markdown-editor target-id="demo-editor-code" enable-code></ol-markdown-editor>
           </div>
         </section>
 
