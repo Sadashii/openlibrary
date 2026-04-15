@@ -35,7 +35,7 @@ class FencedCodePreprocessor(markdown.Preprocessor):
     skip indented lines).
     """
 
-    FENCE_RE = re.compile(r'^`{3,}[^`]*$')
+    FENCE_RE = re.compile(r"^`{3,}[^`]*$")
 
     def run(self, lines):
         result = []
@@ -48,11 +48,11 @@ class FencedCodePreprocessor(markdown.Preprocessor):
                     j += 1
                 if j < n:
                     if result and result[-1].strip():
-                        result.append('')
+                        result.append("")
                     for inner in lines[i + 1 : j]:
-                        result.append('    ' + inner)
+                        result.append("    " + inner)
                     if j + 1 < n and lines[j + 1].strip():
-                        result.append('')
+                        result.append("")
                     i = j + 1
                     continue
             result.append(lines[i])
@@ -70,9 +70,9 @@ class LineBreaksPreprocessor(markdown.Preprocessor):
             if (
                 lines[i].strip()
                 and lines[i + 1].strip()
-                and not markdown.RE.regExp['tabbed'].match(lines[i])
+                and not markdown.RE.regExp["tabbed"].match(lines[i])
                 and not LINK_REFERENCE_RE.match(lines[i])
-                and not lines[i].lstrip().startswith('>')
+                and not lines[i].lstrip().startswith(">")
             ):
                 lines[i] += "<br />"
         return lines
