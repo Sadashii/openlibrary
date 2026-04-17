@@ -182,9 +182,21 @@ def _process_this_book_date_read(book, username, work_id, edition_id, ctx):
         if not parts:
             return
 
-        year = parts[0]
-        month = parts[1] if len(parts) > 1 else None
-        day = parts[2] if len(parts) > 2 else None
+        # Assuming format is strictly dd-mm-yyyy
+        if len(parts) == 3:
+            day = parts[0]
+            month = parts[1]
+            year = parts[2]
+        elif len(parts) == 2:
+            # If it's just mm-yyyy
+            day = None
+            month = parts[0]
+            year = parts[1]
+        elif len(parts) == 1:
+            # If it's just a year
+            day = None
+            month = None
+            year = parts[0]
 
         ctx["pending_dateread_events"].append(
             {
