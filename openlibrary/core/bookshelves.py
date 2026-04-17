@@ -156,7 +156,7 @@ class Bookshelves(db.CommonExtras):
         }
 
         return list(oldb.query(query, vars=data))
-    
+
     @classmethod
     def add_solr_works(cls, readinglog_items, fields: Iterable[str] | None = None) -> None:
         """Given a list of readinglog_items, such as those returned by
