@@ -33,7 +33,14 @@ scheduler = OlAsyncIOScheduler("OL-MONITOR")
 @scheduler.scheduled_job('interval', seconds=60)
 def log_workers_cur_fn():
     """Logs the state of the gunicorn workers."""
-    bash_run(f"log_workers_cur_fn stats.{SERVER}.workers.cur_fn", sources=["utils.sh"])
+    bash_run(
+        f"log_workers_cur_fn webpy stats.{SERVER}.workers.webpy.cur_fn",
+        sources=["olspy.sh"],
+    )
+    bash_run(
+        f"log_workers_cur_fn fastapi stats.{SERVER}.workers.fastapi.cur_fn",
+        sources=["olspy.sh"],
+    )
 
 
 @limit_server(["ol-www0", "ol-covers0"], scheduler)
@@ -107,31 +114,40 @@ async def monitor_partner_useragents():
         return agent_counts
 
     known_names = extract_agent_counts("""
+    403 Research-Cover-Scraper (***@cornell.edu)
     309 BookshopLT/1.0 (***@gmail.com)
     230 BookReadingTime/2.0 (https://bookreadingtime.com; ***@bookreadingtime.com)
     180 CourseworkBot/1.0 (coursework@local)
     180 BookScraper/1.0 (data collection project; contact@example.com)
+    167 librimondo-pim/1.0 (https://librimondo.com; ***@fkwt.pl)
     177 Whefi/1.0 (***@whefi.com)
     160 BookEnricher/1.0 (your@email.com)
+    153 OrelhaDoLivro/1.0 (***@orelhadelivro.com.br; openlibrary-summary)
+    126 KiveoAPI/1.0 (***@kiveo.app)
+    111 BookInClub/1.0 (https://bookinclub.com; ***@bookinclub.com) node.js/axios
+    107 BookDirectoryBot/1.0 (contact: ***@gmail.com)
     102 AwarioSmartBot/1.0 (+https://awario.com/bots.html; ***@awario.com)
      85 Bookhives/1.0 (***@gmail.com)
      85 AliyunSecBot/Aliyun (***@service.alibaba.com)
      63 knihobot.cz (***@knihobot.cz)
      62 BookHub/1.0 (***@ybookshub.com)
+     62 SafAI-EgitimBotu/3.0 (egitim amacli; iletisim: safai@example.com)
      58 Bookscovery/1.0 (https://bookscovery.com; ***@bookscovery.com)
      52 VisionBooksAdminBot/1.0 (https://visionbooks.app/; ***@gmail.com) Node.js
+     51 chieveme.com (***@gmail.com)
      45 BookstoreApp/1.0 (***@thounkai.com)
      45 MonsoonFire-Portal/1.0 (+https://portal.monsoonfire.com; contact ***@monsoonfire.com)
      45 PrecodeZeoos/1.0 (***@precode.com.br)
      44 ReRoll/1.0 (rating-backfill; ***@gmail.com)
      39 ReRoll/1.0 (metadata-backfill; ***@gmail.com)
-     36 OrelhaDoLivro/1.0 (***@orelhadelivro.com.br; openlibrary-summary)
      35 LikesnuBatch/1.0 (Contact: ***@likesnu.kr)
+     32 eBookShelf/1.0 (***@gmail.com)
      28 EmberNovels/1.0 (***@embernovels.com)
      23 RAGAMUFFIN (***@gmail.com)
      22 booklist4u/1.0 (https://booklist4u.com; ***@gmail.com)
      21 TurkicMT-BookPipeline/1.0 (research; ***@example.com)
      20 Gleeph/1.0 (***@gleeph.net)
+     20 ReadingList/2.8.11 (***@readinglist.app)
      18 LitCore/1.0 (https://litcore.io; ***@litcore.io) httpx/0.27
      12 ISBN.nu Book Price Comparison (***@isbn.nu)
       9 ISBNdb (***@isbndb.com)
