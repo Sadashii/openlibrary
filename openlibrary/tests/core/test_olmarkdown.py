@@ -42,9 +42,7 @@ def test_fenced_code_preprocessor():
     assert pre.run(["```", "code", "```", "after"]) == ["    code", "", "after"]
 
     # Multiple fenced blocks in one document are each rewritten independently.
-    assert pre.run(
-        ["```", "a", "```", "between", "```", "b", "```"]
-    ) == ["    a", "", "between", "", "    b"]
+    assert pre.run(["```", "a", "```", "between", "```", "b", "```"]) == ["    a", "", "between", "", "    b"]
 
     # Unterminated fence: the opening backticks pass through as a literal line
     # and the rest of the input is left untouched.
