@@ -38,26 +38,26 @@ class FencedCodePreprocessor(markdown.Preprocessor):
     FENCE_RE = re.compile(r"^`{3,}[^`]*$")
 
     def run(self, lines):
-        result = []
-        i = 0
-        n = len(lines)
-        while i < n:
-            if self.FENCE_RE.match(lines[i]):
-                j = i + 1
-                while j < n and not self.FENCE_RE.match(lines[j]):
-                    j += 1
-                if j < n:
-                    if result and result[-1].strip():
-                        result.append("")
-                    for inner in lines[i + 1 : j]:
-                        result.append("    " + inner)
-                    if j + 1 < n and lines[j + 1].strip():
-                        result.append("")
-                    i = j + 1
+        processed = []
+        idx = 0
+        line_count = len(lines)
+        while idx < line_count:
+            if self.FENCE_RE.match(lines[idx]):
+                fence_end = idx + 1
+                while fence_end < line_count and not self.FENCE_RE.match(lines[fence_end]):
+                    fence_end += 1
+                if fence_end < line_count:
+                    if processed and processed[-1].strip():
+                        processed.append("")
+                    for code_line in lines[idx + 1 : fence_end]:
+                        processed.append("    " + code_line)
+                    if fence_end + 1 < line_count and lines[fence_end + 1].strip():
+                        processed.append("")
+                    idx = fence_end + 1
                     continue
-            result.append(lines[i])
-            i += 1
-        return result
+            processed.append(lines[idx])
+            idx += 1
+        return processed
 
 
 FENCED_CODE_PREPROCESSOR = FencedCodePreprocessor()

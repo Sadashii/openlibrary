@@ -1,4 +1,4 @@
-from openlibrary.core.olmarkdown import OLMarkdown
+from openlibrary.core.olmarkdown import FencedCodePreprocessor, OLMarkdown
 
 
 def test_olmarkdown():
@@ -16,6 +16,49 @@ def test_olmarkdown():
 
     # why extra spaces?
     assert md("a\nb") == p("a<br/>\n   b")
+
+
+def test_fenced_code_preprocessor():
+    pre = FencedCodePreprocessor()
+
+    # Basic fenced block: lines between fences become 4-space indented;
+    # the fence lines themselves are dropped.
+    assert pre.run(["```", "code", "```"]) == ["    code"]
+
+    # Language info string on the opening fence is dropped along with the fence.
+    assert pre.run(["```python", "x = 1", "```"]) == ["    x = 1"]
+
+    # Multi-line content is preserved verbatim, just indented.
+    assert pre.run(["```", "a", "b", "c", "```"]) == ["    a", "    b", "    c"]
+
+    # Pads a blank line *before* the block when the previous line is non-empty,
+    # so the indented block reads as a fresh markdown block.
+    assert pre.run(["before", "```", "code", "```"]) == ["before", "", "    code"]
+
+    # No leading pad when the previous line is already blank.
+    assert pre.run(["before", "", "```", "code", "```"]) == ["before", "", "    code"]
+
+    # Pads a blank line *after* the block when the next line is non-empty.
+    assert pre.run(["```", "code", "```", "after"]) == ["    code", "", "after"]
+
+    # Multiple fenced blocks in one document are each rewritten independently.
+    assert pre.run(
+        ["```", "a", "```", "between", "```", "b", "```"]
+    ) == ["    a", "", "between", "", "    b"]
+
+    # Unterminated fence: the opening backticks pass through as a literal line
+    # and the rest of the input is left untouched.
+    assert pre.run(["```", "no closer", "still going"]) == [
+        "```",
+        "no closer",
+        "still going",
+    ]
+
+    # Empty input is a no-op.
+    assert pre.run([]) == []
+
+    # Lines outside any fence are not modified.
+    assert pre.run(["plain text"]) == ["plain text"]
 
 
 def test_olmarkdown_fenced_code():
